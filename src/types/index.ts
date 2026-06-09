@@ -7,6 +7,8 @@ import type { TFile } from "obsidian";
 export interface Post {
 	file: TFile;
 	path: string;
+	/** Stable id within the folder = the filename stem (e.g. `2026-06-09T143203`). */
+	id: string;
 	/** Creation time, parsed from the filename timestamp (e.g. 2026-06-09T143203.md). */
 	created: number;
 	/** Markdown body, without frontmatter. */

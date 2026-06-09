@@ -50,10 +50,16 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
 - Each post displays its content, date, score, and hashtags.
 - 300 character soft limit: content longer than 300 characters is hidden under a "read more" toggle.
 - Each post has:
-  - Edit button
-  - Delete button
+  - Reply button — starts a reply, forming a thread (see Threads below)
+  - Edit button — opens the real note in Obsidian's editor
+  - Delete button — confirms, then moves the note to vault trash
   - Upvote / downvote buttons (modify the post's score)
-  - Share button — on click, cross-posts to Bluesky/Mastodon
+  - Share button — on click, cross-posts to Bluesky/Mastodon (planned; placeholder for now)
+
+**Threads / Replies**
+- Any post can reply to another (stored as a quoted `reply_to: "<parent-id>"` in frontmatter, where the id is the parent's filename stem). Replies nest under their parent in the timeline, indented with a thread line (indentation caps at depth 5 so deep chains stay readable). Enables play-by-post roleplaying threads (replying to your own posts).
+- Clicking Reply sets a "Replying to …" banner on the composer (with cancel); submitting writes the link. A reply whose parent is missing (renamed/deleted) renders as a top-level post.
+- Threading shows in the browsing views; an active search flattens to the matching posts.
 
 **Editor (bottom)**
 - Auto-growing textarea for writing new posts in markdown (Cmd/Ctrl+Enter submits). The composer is a plain textarea, not a live-preview editor — but **posts in the timeline render the way Obsidian renders notes** (via `MarkdownRenderer`), and the per-post **Edit** action opens the real note in Obsidian's own editor for full editing.
@@ -67,13 +73,6 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
 - Uses `@atproto/api` for Bluesky, Mastodon REST API for Mastodon.
 - Store the external post ID back on the local record after sharing (set `shared: ID`).
 - Share functionality may only work on desktop (Obsidian mobile lacks full Node.js). This is acceptable for MVP.
-
-## Threading / Replies
-
-Architect the data model to support replies from the start (the `reply_to` field). This enables:
-- Threads for play-by-post roleplaying games (where I reply to my own posts creating threads within the timeline).
-
-Not required for MVP UI, but the data model should support it.
 
 ## Technical Notes
 

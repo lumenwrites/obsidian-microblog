@@ -2,6 +2,7 @@ import {
 	faArrowDown,
 	faArrowUp,
 	faPenToSquare,
+	faReply,
 	faShareNodes,
 	faTrash,
 } from "@fortawesome/free-solid-svg-icons";
@@ -15,16 +16,28 @@ import { cn, formatPostDate } from "../lib/utils";
 import type { Post } from "../types";
 import { MarkdownPreview } from "./MarkdownPreview";
 
+/** How many nesting levels still add indentation before it's capped (deep threads). */
+const MAX_INDENT_DEPTH = 5;
+
 /**
  * One post in the timeline: metadata + actions header, the rendered markdown body
  * (folded behind "read more" when longer than the soft limit), and clickable tags.
+ *
+ * `depth` is its position in a reply thread (0 = root); it indents and draws a
+ * thread line. `isReplyTarget` highlights the post currently being replied to.
  */
 export function PostCard({
 	post,
+	depth,
+	isReplyTarget,
 	onSelectTag,
+	onReply,
 }: {
 	post: Post;
+	depth: number;
+	isReplyTarget: boolean;
 	onSelectTag: (tag: string) => void;
+	onReply: () => void;
 }) {
 	const app = useApp();
 	const settings = useSettings();
@@ -47,11 +60,21 @@ export function PostCard({
 	};
 
 	return (
-		<article className="microblog-post">
+		<article
+			className={cn(
+				"microblog-post",
+				depth > 0 && "is-reply",
+				isReplyTarget && "is-reply-target",
+			)}
+			style={{ marginInlineStart: `${Math.min(depth, MAX_INDENT_DEPTH) * 1.25}rem` }}
+		>
 			<div className="microblog-post-header">
 				<span className="microblog-post-date">{formatPostDate(post.created)}</span>
 				<span className="microblog-post-score">{post.score}</span>
 				<div className="microblog-post-actions">
+					<button title="Reply" onClick={onReply}>
+						<FontAwesomeIcon icon={faReply} />
+					</button>
 					<button title="Upvote" onClick={() => void adjustScore(app, post.file, 1)}>
 						<FontAwesomeIcon icon={faArrowUp} />
 					</button>

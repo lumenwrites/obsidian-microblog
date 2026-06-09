@@ -62,6 +62,7 @@ export async function loadPost(app: App, file: TFile): Promise<Post> {
 	return {
 		file,
 		path: file.path,
+		id: file.basename,
 		created: parseTimestamp(file.basename) ?? file.stat.ctime,
 		body: stripFrontmatter(content, cache?.frontmatterPosition?.end.offset),
 		score,
@@ -76,11 +77,15 @@ export async function loadPosts(app: App, folderPath: string): Promise<Post[]> {
 	return Promise.all(listPostFiles(app, folderPath).map((f) => loadPost(app, f)));
 }
 
-/** Create a new post file in the folder (creating the folder if needed). */
+/**
+ * Create a new post file in the folder (creating the folder if needed).
+ * Pass `replyTo` (a parent post's id) to make this a reply in a thread.
+ */
 export async function createPost(
 	app: App,
 	folderPath: string,
 	body: string,
+	replyTo?: string,
 ): Promise<TFile> {
 	const dir = normalizePath(folderPath);
 	if (!(app.vault.getAbstractFileByPath(dir) instanceof TFolder)) {
@@ -94,8 +99,11 @@ export async function createPost(
 		path = `${dir}/${stem}-${i}.md`;
 	}
 
-	const content = `---\nscore: 0\n---\n${body.trim()}\n`;
-	return app.vault.create(path, content);
+	// reply_to is quoted so YAML never coerces the timestamp-like id to a date.
+	const frontmatter = replyTo
+		? `---\nscore: 0\nreply_to: "${replyTo}"\n---\n`
+		: `---\nscore: 0\n---\n`;
+	return app.vault.create(path, `${frontmatter}${body.trim()}\n`);
 }
 
 /** Add `delta` to a post's score (atomic frontmatter read-modify-write). */

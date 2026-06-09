@@ -49,13 +49,17 @@ Posts are plain notes; the plugin owns no database. The flow is one-directional 
 
 1. **`lib/posts.ts`** is the only place that touches the vault. It maps a file ↔ `Post` and does all CRUD, **scoped to the view's folder**:
    - read: `listPostFiles` (folder children, `.md` only) → `loadPost` reads frontmatter/tags from `metadataCache` and the body from `vault.cachedRead` (frontmatter stripped via the cached `frontmatterPosition`).
-   - create: `createPost` makes the folder if needed and writes a timestamp-named file (`2026-06-09T143203.md`, collisions get a `-N` suffix) with `score: 0` frontmatter.
+   - create: `createPost` makes the folder if needed and writes a timestamp-named file (`2026-06-09T143203.md`, collisions get a `-N` suffix) with `score: 0` frontmatter, plus a quoted `reply_to` when it's a reply.
    - score: `adjustScore` via `fileManager.processFrontMatter` (atomic).
    - delete: `deletePost` via `fileManager.trashFile` (respects the user's trash setting).
    - edit: `openPost` opens the real note in a tab — editing happens in Obsidian's own editor, not in the plugin.
 2. **`hooks/usePosts.ts`** loads the folder into React state and subscribes (inside `workspace.onLayoutReady`, removed via `offref` on unmount) to `vault` `create`/`delete`/`rename` + `metadataCache` `changed`, all filtered to the folder. Any change → reload. So hand-edits, deletes, and the plugin's own writes all converge through the same path: **write to disk → event fires → reload → re-render.** The UI never optimistically mutates local state.
-3. **`Timeline.tsx`** filters (search over body + tags) and sorts (newest / top-by-score) in a `useMemo`, renders `PostCard`s bottom-anchored (newest just above the composer, auto-scroll to bottom), and calls `createPost` from the composer.
+3. **`Timeline.tsx`** turns the flat post list into display `rows` in a `useMemo`. With no search it builds the **reply tree** (`reply_to` → parent via each post's `id` = filename stem), sorts roots by the current order, sorts replies oldest→newest, and DFS-flattens to `{ post, depth }[]`; an active search instead flattens to the matching posts. It renders `PostCard`s bottom-anchored (auto-scroll to the composer edge), tracks the `replyTarget`, and calls `createPost(folder, body, replyTarget?.id)`.
 4. **`MarkdownPreview`** renders each post body the way Obsidian renders notes (see below).
+
+### Threads / replies
+
+Each post's `id` is its filename stem; a reply stores the parent id in `reply_to` frontmatter (quoted so YAML can't coerce the timestamp-like id to a date). Threads are a pure transform over the already-live post list — no new events or subscriptions. `PostCard` indents by `min(depth, 5)` and draws a thread-line; the **Reply** action sets the composer's target (a "Replying to …" banner with cancel + autofocus). A reply whose parent isn't in the folder (renamed/deleted) renders as a root — no cascade on delete.
 
 ## Markdown rendering
 

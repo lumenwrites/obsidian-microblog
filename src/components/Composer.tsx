@@ -1,10 +1,17 @@
-import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
+import { faPaperPlane, faReply, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { useSettings } from "../context/PluginContext";
 import { cn } from "../lib/utils";
+import type { Post } from "../types";
 import { CharCountRing } from "./CharCountRing";
+
+/** One-line preview of the post being replied to, for the composer banner. */
+function replySnippet(post: Post): string {
+	const text = post.body.replace(/\s+/g, " ").trim();
+	return text.length > 60 ? `${text.slice(0, 60)}…` : text || "(empty post)";
+}
 
 /**
  * The composer: an auto-growing textarea, a circular char-count indicator, and the
@@ -15,9 +22,13 @@ import { CharCountRing } from "./CharCountRing";
 export function Composer({
 	onSubmit,
 	atTop = false,
+	replyingTo = null,
+	onCancelReply,
 }: {
 	onSubmit: (body: string) => Promise<void>;
 	atTop?: boolean;
+	replyingTo?: Post | null;
+	onCancelReply?: () => void;
 }) {
 	const settings = useSettings();
 	const [value, setValue] = useState("");
@@ -55,12 +66,44 @@ export function Composer({
 				void submitRef.current();
 			}
 		};
+		// Obsidian's native mobile toolbar (the bar above the soft keyboard) is hard-wired
+		// to the active CodeMirror editor. Our composer is a plain <textarea> in a custom
+		// view, so when it's focused the toolbar has no editor to populate itself from and
+		// renders as an empty, tall black bar. We flag the body while focused so CSS can hide
+		// that broken shell (see styles.css → `.mobile-toolbar`). Cleanup clears the flag even
+		// if we unmount while still focused (blur wouldn't fire).
+		const FOCUS_CLASS = "microblog-composer-focused";
+		const onFocus = () => activeDocument.body.addClass(FOCUS_CLASS);
+		const onBlur = () => activeDocument.body.removeClass(FOCUS_CLASS);
 		el.addEventListener("keydown", onKeyDown, true);
-		return () => el.removeEventListener("keydown", onKeyDown, true);
+		el.addEventListener("focus", onFocus);
+		el.addEventListener("blur", onBlur);
+		return () => {
+			el.removeEventListener("keydown", onKeyDown, true);
+			el.removeEventListener("focus", onFocus);
+			el.removeEventListener("blur", onBlur);
+			activeDocument.body.removeClass(FOCUS_CLASS);
+		};
 	}, []);
+
+	// Focus the textarea when a reply target is set, so you can type immediately.
+	useEffect(() => {
+		if (replyingTo) textareaRef.current?.focus();
+	}, [replyingTo]);
 
 	return (
 		<div className={cn("microblog-composer", atTop && "is-top")}>
+			{replyingTo && (
+				<div className="microblog-reply-banner">
+					<FontAwesomeIcon icon={faReply} />
+					<span className="microblog-reply-snippet">
+						Replying to: {replySnippet(replyingTo)}
+					</span>
+					<button title="Cancel reply" onClick={onCancelReply}>
+						<FontAwesomeIcon icon={faXmark} />
+					</button>
+				</div>
+			)}
 			<TextareaAutosize
 				ref={textareaRef}
 				className="microblog-composer-input"
