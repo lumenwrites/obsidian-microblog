@@ -83,6 +83,22 @@ Plain CSS in a single hand-written `styles.css` at the plugin root — Obsidian 
 - **Hot reload:** the `.hotreload` marker + the Hot-Reload community plugin reload the plugin when `main.js`/`styles.css` change. If a change isn't caught, reload manually (Cmd+R or toggle the plugin).
 - **`minAppVersion` 1.7.2** (required by `workspace.revealLeaf`). `isDesktopOnly: false` — the timeline/data layer work on mobile; only future cross-posting is desktop-only and will degrade gracefully.
 
+## Distribution & releases
+
+The plugin isn't in the community store; it's distributed to mobile (the user's iPad) via **BRAT**, which installs/auto-updates a plugin from a **public GitHub repo's latest release**. Mobile Obsidian can't compile, so a release must ship the *built* files: `main.js`, `manifest.json`, `styles.css`.
+
+- **CI: `.github/workflows/release.yml`** fires on **every push to `main`**. It reads the version **from `manifest.json`** (via `jq`), and if no release with that version exists yet, runs `npm ci` + `npm run build` and creates a GitHub release tagged with that version, attaching the three assets. Because the tag is *derived from the manifest*, it can never drift from it — that drift (a release tagged `0.0.1` while the manifest says `0.1.0`) is what makes BRAT report `main.js` as "missing." Pushes that don't bump the version find the release already exists and **skip cleanly** (no failed runs).
+- **Tags have no `v` prefix** and are created by the action, not by hand — Obsidian/BRAT require the tag to equal the manifest version exactly (`0.1.1`). Don't create release tags manually.
+- **Cutting a release:** bump the version, commit, push to `main`:
+  ```
+  npm run build && npm run lint              # verify it compiles & lints
+  npm version patch --no-git-tag-version     # bumps package.json + manifest.json + versions.json (no tag, no commit)
+  git commit -am "Release 0.1.1"
+  git push                                    # the action builds & publishes the release
+  ```
+  `npm version` runs the `version` script (`version-bump.mjs`), which syncs `manifest.json` + `versions.json` to the new number; `--no-git-tag-version` keeps tagging the action's job. `patch`/`minor`/`major` pick the bump.
+- **Public-repo hygiene:** the repo is public. `main.js` (rebuilt by CI), `node_modules`, and `data.json` (runtime settings, may hold user paths) stay gitignored. Never commit vault notes, secrets, or anything outside this plugin folder.
+
 ## File map
 
 ```
@@ -93,6 +109,8 @@ tsconfig.json          strict, jsx: react-jsx
 esbuild.config.mjs     bundles src/main.ts → main.js
 eslint.config.mjs      obsidianmd recommended + type-aware TS rules
 version-bump.mjs       npm-version hook: sync manifest/versions
+.github/workflows/
+  release.yml          on push to main: build + publish a release (assets for BRAT) when manifest version is new
 .hotreload             marker for the Hot-Reload plugin
 styles.css             hand-written, committed; scoped under .microblog-root
 src/
