@@ -1,6 +1,6 @@
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { KeyboardEvent, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { useSettings } from "../context/PluginContext";
 import { cn } from "../lib/utils";
@@ -35,23 +35,38 @@ export function Composer({
 		}
 	};
 
-	const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-		if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-			e.preventDefault();
-			void submit();
-		}
-	};
+	// Submit shortcut via a native capture-phase listener on the textarea. We do this
+	// instead of React's onKeyDown so it runs *before* any bubble-phase hotkey handler
+	// (e.g. an Obsidian "Mod+Enter" binding, which is why Cmd+Enter could otherwise be
+	// swallowed before reaching React). stopPropagation keeps Obsidian from also acting.
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const submitRef = useRef(submit);
+	submitRef.current = submit;
+
+	useEffect(() => {
+		const el = textareaRef.current;
+		if (!el) return;
+		const onKeyDown = (e: KeyboardEvent) => {
+			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+				e.preventDefault();
+				e.stopPropagation();
+				void submitRef.current();
+			}
+		};
+		el.addEventListener("keydown", onKeyDown, true);
+		return () => el.removeEventListener("keydown", onKeyDown, true);
+	}, []);
 
 	return (
 		<div className={cn("microblog-composer", atTop && "is-top")}>
 			<TextareaAutosize
+				ref={textareaRef}
 				className="microblog-composer-input"
 				placeholder="Write something funny…"
 				value={value}
 				minRows={2}
 				maxRows={12}
 				onChange={(e) => setValue(e.target.value)}
-				onKeyDown={onKeyDown}
 			/>
 			<div className="microblog-composer-actions">
 				<CharCountRing count={value.length} limit={settings.charLimit} />
