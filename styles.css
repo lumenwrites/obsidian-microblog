@@ -16,6 +16,17 @@
 	color: var(--text-normal);
 }
 
+/*
+ * On mobile, Obsidian pads the bottom of the view content to clear the on-screen keyboard
+ * (it expects a CodeMirror editor + mobile toolbar to live there). Our timeline manages
+ * its own layout — height:100% with an internally scrolling feed — so that padding just
+ * renders as an empty bar above the keyboard when the composer is focused. Zero it out.
+ * `!important` is needed because Obsidian sets the padding as an inline style.
+ */
+.view-content.microblog-root {
+	padding-bottom: 0 !important;
+}
+
 /* ── Layout: toolbar (top) → feed (scrolls) → composer (bottom) ───────────── */
 
 .microblog-timeline {
@@ -198,18 +209,6 @@
 }
 
 /* ── Composer ─────────────────────────────────────────────────────────────── */
-
-/*
- * Hide Obsidian's native mobile toolbar (the bar above the soft keyboard) while our
- * composer is focused. That toolbar is hard-wired to the active CodeMirror editor; our
- * composer is a plain <textarea> in a custom view, so it has no editor to drive it and
- * shows up as an empty, tall black bar. The body flag is toggled in Composer.tsx on
- * focus/blur. This is a global selector on purpose — `.mobile-toolbar` lives outside
- * `.microblog-root`, and on desktop the element doesn't exist so the rule is a no-op.
- */
-body.microblog-composer-focused .mobile-toolbar {
-	display: none !important;
-}
 
 .microblog-composer {
 	display: flex;

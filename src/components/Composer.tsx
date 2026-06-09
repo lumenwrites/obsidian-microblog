@@ -1,28 +1,11 @@
 import { faPaperPlane, faReply, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Notice } from "obsidian";
 import { useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { useSettings } from "../context/PluginContext";
 import { cn } from "../lib/utils";
 import type { Post } from "../types";
 import { CharCountRing } from "./CharCountRing";
-
-/**
- * Obsidian mobile is a Capacitor app; its bundled Keyboard plugin is reachable at
- * `window.Capacitor.Plugins.Keyboard`. We only need `setAccessoryBarVisible` to hide the
- * native iOS bar that sits above the keyboard for a focused <textarea>. Returns undefined
- * on desktop (no Capacitor) so callers can no-op safely.
- */
-interface CapacitorKeyboard {
-	setAccessoryBarVisible?: (opts: { isVisible: boolean }) => void;
-}
-function getCapacitorKeyboard(): CapacitorKeyboard | undefined {
-	const cap = (window as unknown as {
-		Capacitor?: { Plugins?: { Keyboard?: CapacitorKeyboard } };
-	}).Capacitor;
-	return cap?.Plugins?.Keyboard;
-}
 
 /** One-line preview of the post being replied to, for the composer banner. */
 function replySnippet(post: Post): string {
@@ -83,41 +66,8 @@ export function Composer({
 				void submitRef.current();
 			}
 		};
-		// The tall black bar above the keyboard is the native iOS input-accessory view that
-		// WKWebView puts over a focused <textarea>. It is NOT a DOM element (confirmed: no
-		// `.mobile-toolbar` exists and a position scan found no bottom bar), so CSS can't
-		// touch it. Obsidian hides it for its own editor and draws `.mobile-toolbar` instead;
-		// our plain textarea gets the raw native bar. The only lever from JS is Obsidian's
-		// bundled Capacitor Keyboard plugin: `setAccessoryBarVisible({ isVisible: false })`.
-		// We hide it on focus and restore on blur so other parts of the app are unaffected.
-		// The body class is kept only so the (harmless) CSS rule can still catch a stray
-		// `.mobile-toolbar` if one ever appears. Cleanup runs even if we unmount while focused.
-		const FOCUS_CLASS = "microblog-composer-focused";
-		const keyboard = getCapacitorKeyboard();
-		let probed = false;
-		const onFocus = () => {
-			activeDocument.body.addClass(FOCUS_CLASS);
-			keyboard?.setAccessoryBarVisible?.({ isVisible: false });
-			// One-time probe so we can confirm on-device whether the bridge is even present.
-			if (!probed) {
-				probed = true;
-				new Notice(`keyboard bridge: ${keyboard ? "found" : "MISSING"}`, 6000);
-			}
-		};
-		const onBlur = () => {
-			activeDocument.body.removeClass(FOCUS_CLASS);
-			keyboard?.setAccessoryBarVisible?.({ isVisible: true });
-		};
 		el.addEventListener("keydown", onKeyDown, true);
-		el.addEventListener("focus", onFocus);
-		el.addEventListener("blur", onBlur);
-		return () => {
-			el.removeEventListener("keydown", onKeyDown, true);
-			el.removeEventListener("focus", onFocus);
-			el.removeEventListener("blur", onBlur);
-			activeDocument.body.removeClass(FOCUS_CLASS);
-			keyboard?.setAccessoryBarVisible?.({ isVisible: true });
-		};
+		return () => el.removeEventListener("keydown", onKeyDown, true);
 	}, []);
 
 	// Focus the textarea when a reply target is set, so you can type immediately.
