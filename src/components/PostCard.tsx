@@ -117,6 +117,20 @@ export function PostCard({
 			)}
 
 			<footer className="microblog-post-footer">
+				{post.tags.length > 0 && (
+					<div className="microblog-post-tags">
+						{post.tags.map((tag) => (
+							<button
+								key={tag}
+								className="microblog-post-tag"
+								title={`Filter by ${tag}`}
+								onClick={() => onSelectTag(tag)}
+							>
+								{tag}
+							</button>
+						))}
+					</div>
+				)}
 				{done && (
 					<span className="microblog-post-done" title="Done">
 						<FontAwesomeIcon icon={faCheck} />

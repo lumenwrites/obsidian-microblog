@@ -7,6 +7,7 @@ import { useSettings } from "../context/PluginContext";
 import { cn } from "../lib/utils";
 import type { Post } from "../types";
 import { CharCountRing } from "./CharCountRing";
+import { normalizeTag, TagInput } from "./TagInput";
 
 /** One-line preview of the post being replied to, for the composer banner. */
 function replySnippet(post: Post): string {
@@ -25,14 +26,18 @@ export function Composer({
 	atTop = false,
 	replyingTo = null,
 	onCancelReply,
+	allTags,
 }: {
-	onSubmit: (body: string) => Promise<void>;
+	onSubmit: (body: string, tags: string[]) => Promise<void>;
 	atTop?: boolean;
 	replyingTo?: Post | null;
 	onCancelReply?: () => void;
+	allTags: string[];
 }) {
 	const settings = useSettings();
 	const [value, setValue] = useState("");
+	const [tags, setTags] = useState<string[]>([]);
+	const [tagInput, setTagInput] = useState("");
 	const [busy, setBusy] = useState(false);
 	const trimmed = value.trim();
 
@@ -40,8 +45,18 @@ export function Composer({
 		if (!trimmed || busy) return;
 		setBusy(true);
 		try {
-			await onSubmit(trimmed);
-			setValue(""); // only cleared on success — a failed post keeps your text
+			// Flush a still-uncommitted tag token (you can submit without pressing space).
+			const pending = normalizeTag(tagInput);
+			const finalTags =
+				pending && !tags.some((t) => t.toLowerCase() === pending.toLowerCase())
+					? [...tags, pending]
+					: tags;
+
+			await onSubmit(trimmed, finalTags);
+			// Only cleared on success — a failed post keeps your text and tags.
+			setValue("");
+			setTags([]);
+			setTagInput("");
 		} catch (e) {
 			console.error("[microblog] Couldn't post", e);
 			new Notice("Couldn't post — see console.");
@@ -102,6 +117,13 @@ export function Composer({
 				onChange={(e) => setValue(e.target.value)}
 			/>
 			<div className="microblog-composer-actions">
+				<TagInput
+					tags={tags}
+					input={tagInput}
+					onTagsChange={setTags}
+					onInputChange={setTagInput}
+					suggestions={allTags}
+				/>
 				<CharCountRing count={value.length} limit={settings.charLimit} />
 				<button
 					className="microblog-note-btn"

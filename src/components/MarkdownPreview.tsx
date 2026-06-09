@@ -40,7 +40,8 @@ export function MarkdownPreview({
 			if (tag && onTagClick) {
 				e.preventDefault();
 				e.stopPropagation();
-				onTagClick(tag.getText());
+				// Strip the leading "#" so it matches our frontmatter-tag search terms.
+				onTagClick(tag.getText().replace(/^#/, ""));
 			}
 		};
 		el.addEventListener("click", onClick, true);

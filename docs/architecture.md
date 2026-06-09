@@ -48,8 +48,8 @@ Because `setState` can fire before `onOpen()` creates the root, `renderApp()` gu
 Posts are plain notes; the plugin owns no database. The flow is one-directional with disk as the source of truth:
 
 1. **`lib/posts.ts`** is the only place that touches the vault. It maps a file ↔ `Post` and does all CRUD, **scoped to the view's folder**:
-   - read: `listPostFiles` (folder children, `.md` only) → `loadPost` reads frontmatter/tags from `metadataCache` and the body from `vault.cachedRead` (frontmatter stripped via the cached `frontmatterPosition`).
-   - create: `createPost` makes the folder if needed and writes a timestamp-named file (`2026-06-09T143203.md`, collisions get a `-N` suffix) with `score: 0` frontmatter, plus a quoted `reply_to` when it's a reply.
+   - read: `listPostFiles` (folder children, `.md` only) → `loadPost` reads frontmatter from `metadataCache` and the body from `vault.cachedRead` (frontmatter stripped via the cached `frontmatterPosition`). Tags come from the `tags` frontmatter field via `parseFrontMatterTags` (normalized, `#` stripped) — not inline body hashtags.
+   - create: `createPost` makes the folder if needed and writes a timestamp-named file (`2026-06-09T143203.md`, collisions get a `-N` suffix) with `score: 0` frontmatter, plus a quoted `reply_to` when it's a reply and a `tags` block when tags were entered.
    - score: `adjustScore` via `fileManager.processFrontMatter` (atomic). `setDone` likewise toggles a `done` ISO timestamp in frontmatter.
    - archive / delete: `archivePost` and `deletePost` both `renameFile` the note into a subfolder beside it — `archived/` or `trash/` respectively (shared `moveToSubfolder` helper, folder created on demand). Since `listPostFiles` reads only *direct* children, these posts drop out of the timeline (and stats) but stay in the vault — reversible by moving them back, and each subfolder can be opened as its own timeline.
    - edit: `openPost` opens the real note in a tab — editing happens in Obsidian's own editor, not in the plugin.
@@ -138,7 +138,8 @@ src/
     SortControl.tsx    SelectControl preset: New / Top / Resurface
     FilterControl.tsx  SelectControl preset: All / Not done / Done
     PostCard.tsx       one post: folded markdown body + bottom-right footer (date/score/vote/edit + ⋯ menu)
-    Composer.tsx       textarea + char-count ring + NOTE button
+    Composer.tsx       tag input + textarea + char-count ring + NOTE button
+    TagInput.tsx       chips + autocomplete tag editor (controlled by Composer)
     CharCountRing.tsx  circular char-count indicator
     MarkdownPreview.tsx renders a post body via MarkdownRenderer.render; intercepts #tag clicks
     StatsWidget.tsx    contribution graph + backfilled streak + total (under the composer)

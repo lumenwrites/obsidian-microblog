@@ -1,4 +1,4 @@
-import { App, getAllTags, normalizePath, TFile, TFolder } from "obsidian";
+import { App, normalizePath, parseFrontMatterTags, TFile, TFolder } from "obsidian";
 import type { Post } from "../types";
 
 /**
@@ -72,7 +72,9 @@ export async function loadPost(app: App, file: TFile): Promise<Post> {
 		shared,
 		replyTo,
 		done,
-		tags: cache ? (getAllTags(cache) ?? []) : [],
+		// Tags are a frontmatter field (not inline body hashtags). parseFrontMatterTags
+		// normalizes array/string/comma forms and returns them `#`-prefixed; we strip it.
+		tags: (parseFrontMatterTags(fm) ?? []).map((t) => t.replace(/^#/, "")),
 	};
 }
 
@@ -83,13 +85,13 @@ export async function loadPosts(app: App, folderPath: string): Promise<Post[]> {
 
 /**
  * Create a new post file in the folder (creating the folder if needed).
- * Pass `replyTo` (a parent post's id) to make this a reply in a thread.
+ * `replyTo` (a parent post's id) makes this a reply; `tags` go in frontmatter.
  */
 export async function createPost(
 	app: App,
 	folderPath: string,
 	body: string,
-	replyTo?: string,
+	opts: { tags?: string[]; replyTo?: string } = {},
 ): Promise<TFile> {
 	const dir = normalizePath(folderPath);
 	if (!(app.vault.getAbstractFileByPath(dir) instanceof TFolder)) {
@@ -103,11 +105,15 @@ export async function createPost(
 		path = `${dir}/${stem}-${i}.md`;
 	}
 
-	// reply_to is quoted so YAML never coerces the timestamp-like id to a date.
-	const frontmatter = replyTo
-		? `---\nscore: 0\nreply_to: "${replyTo}"\n---\n`
-		: `---\nscore: 0\n---\n`;
-	return app.vault.create(path, `${frontmatter}${body.trim()}\n`);
+	// Build frontmatter by hand (one write). reply_to is quoted so YAML never coerces
+	// the timestamp-like id to a date; tags use block style (the Obsidian-idiomatic form).
+	const lines = ["score: 0"];
+	if (opts.replyTo) lines.push(`reply_to: "${opts.replyTo}"`);
+	if (opts.tags?.length) {
+		lines.push("tags:");
+		for (const tag of opts.tags) lines.push(`  - ${tag}`);
+	}
+	return app.vault.create(path, `---\n${lines.join("\n")}\n---\n${body.trim()}\n`);
 }
 
 /** Add `delta` to a post's score (atomic frontmatter read-modify-write). */

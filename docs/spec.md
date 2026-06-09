@@ -26,9 +26,10 @@ Frontmatter fields:
 - `score` — numeric, like reddit upvotes, user can modify manually to rank favorite posts
 - `reply_to` — id (filename stem) of the parent post, for threads
 - `done` — ISO timestamp set when the post is marked done (absent = not done)
+- `tags` — a YAML list of tags (standard Obsidian frontmatter tags)
 - Can contain more fields in the future as needed
 
-Every post is a normal Obsidian note — visible in the file explorer, searchable via Obsidian's global search, editable by hand in the normal editor. Tags (hashtags in post body) are indexed by Obsidian's MetadataCache automatically. The timeline UI collects tags only from files in its folder, not from the entire vault.
+Every post is a normal Obsidian note — visible in the file explorer, searchable via Obsidian's global search, editable by hand in the normal editor. **Tags are a structured frontmatter field** (`tags`), written via the composer's tag input and shown as chips on each post — not inline `#hashtags` in the body. They're still standard Obsidian tags (so the global tag pane / search see them). The timeline's tag autocomplete collects tags only from files in its folder, not the whole vault. (Inline `#hashtags` typed into a body still render as clickable Obsidian tags, but aren't part of the structured `tags` field.)
 
 ## Navigation
 
@@ -44,13 +45,13 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
 
 **Search & Sort Bar (top)**
 - Search input. Typing text filters posts to those containing the text. X button clears the search.
-- Clicking a hashtag in any post populates the search bar with that hashtag and filters automatically.
+- Clicking a tag chip on any post populates the search bar with that tag and filters automatically.
 - Sorting dropdown: Newest (chronological), Top (by score), or **Resurface** — a review-priority order that floats up stale, high-scored posts (so good old material periodically resurfaces); interacting with a post (edit/upvote/done) bumps its modified time and sends it back down to climb again.
 - Filter dropdown: **All / Not done / Done** — filters by the `done` frontmatter flag.
 
 **Timeline (middle)**
 - Displays posts in chronological order, newest posts at the bottom.
-- Each post displays its content, date, score, and hashtags.
+- Each post displays its content, its tags (as rounded chips on the left of the footer, click to filter), date, and score.
 - 300 character soft limit: content longer than 300 characters is hidden under a "read more" toggle.
 - Each post has:
   - Upvote / downvote buttons (modify the post's score)
@@ -69,6 +70,7 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
 - Per folder; visible by default, hideable via **Show stats**. Daily goal is configurable (default 3). Replies count toward goal and total.
 
 **Editor (bottom)**
+- A tag input sits to the left of the char-count ring: type tags (autocompleting against the folder's existing tags, or create new ones); space or comma commits a tag, Enter accepts the highlighted suggestion, Backspace on an empty field removes the last tag. Committed tags become removable chips and are written to the new post's `tags` frontmatter.
 - Auto-growing textarea for writing new posts in markdown (Cmd/Ctrl+Enter submits). The composer is a plain textarea, not a live-preview editor — but **posts in the timeline render the way Obsidian renders notes** (via `MarkdownRenderer`), and the per-post **Edit** action opens the real note in Obsidian's own editor for full editing.
 - Circular progress bar indicator showing character count relative to 300 char limit. You can write longer than 300 chars — it just affects the "read more" threshold in the timeline.
 - "NOTE" button to add the post to the timeline.

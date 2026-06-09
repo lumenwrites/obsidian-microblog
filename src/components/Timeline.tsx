@@ -106,8 +106,15 @@ export function Timeline() {
 		if (el) el.scrollTop = composerOnTop ? 0 : el.scrollHeight;
 	}, [rows.length, composerOnTop]);
 
-	const addPost = async (body: string) => {
-		await createPost(app, folderPath, body, replyTarget?.id);
+	// Distinct tags across the folder, for composer autocomplete.
+	const allTags = useMemo(() => {
+		const set = new Set<string>();
+		for (const p of posts) for (const t of p.tags) set.add(t);
+		return [...set].sort((a, b) => a.localeCompare(b));
+	}, [posts]);
+
+	const addPost = async (body: string, tags: string[]) => {
+		await createPost(app, folderPath, body, { tags, replyTo: replyTarget?.id });
 		setReplyTarget(null);
 	};
 
@@ -127,6 +134,7 @@ export function Timeline() {
 			atTop={composerOnTop}
 			replyingTo={replyTarget}
 			onCancelReply={() => setReplyTarget(null)}
+			allTags={allTags}
 		/>
 	);
 	const stats = settings.showStats ? <StatsWidget posts={posts} /> : null;
