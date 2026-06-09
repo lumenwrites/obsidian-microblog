@@ -26,12 +26,6 @@
 .view-content.microblog-root {
 	padding-bottom: 0 !important;
 }
-.view-content {
-	padding-bottom: 0 !important;
-}
-.microblog-root {
-	padding-bottom: 0 !important;
-}
 
 /* ── Layout: toolbar (top) → feed (scrolls) → composer (bottom) ───────────── */
 
