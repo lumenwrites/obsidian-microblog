@@ -244,8 +244,12 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 1.9em;
-	height: 1.9em;
+	/* A touch larger than the footer text so the icons read clearly; the square is
+	   sized in em, so it scales with this. Middle ground between the old roomy
+	   padding and the too-tight fixed square. */
+	font-size: var(--font-ui-small);
+	width: 2.3em;
+	height: 2.3em;
 	padding: 0;
 }
 
