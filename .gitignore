@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build output (esbuild emits main.js; styles.css is hand-written source and IS committed)
+main.js
+*.js.map
+
+# Obsidian plugin runtime settings (created by saveData at runtime)
+data.json
+
+# OS junk
+.DS_Store
