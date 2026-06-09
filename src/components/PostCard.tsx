@@ -71,9 +71,6 @@ export function PostCard({
 				.setWarning(true)
 				.onClick(() => void remove()),
 		);
-		// Tag the menu DOM so we can scope larger, touch-friendly item sizing to it
-		// (Menu.dom isn't in the public typings, but it's the rendered container).
-		(menu as Menu & { dom?: HTMLElement }).dom?.addClass("microblog-post-menu");
 		menu.showAtMouseEvent(e.nativeEvent);
 	};
 

@@ -61,6 +61,12 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
 - Clicking Reply sets a "Replying to …" banner on the composer (with cancel); submitting writes the link. A reply whose parent is missing (renamed/deleted) renders as a top-level post.
 - Threading shows in the browsing views; an active search flattens to the matching posts.
 
+**Stats widget (attached to the composer)**
+- A 30-day contribution graph — one rounded square per day, fill scaling with that day's progress toward the daily goal (pale at the first post, fully saturated at the goal). Today's square is outlined. Squares show *raw* daily counts.
+- A **streak** (🔥) — consecutive days the goal was met, ending today. Backfillable: surplus posts beyond the goal flow backward to repair skipped days within the last 14 days (so an off day or two is forgiven). An in-progress today gets a grace day.
+- A **total** (▪) — all-time post count in the folder.
+- Per folder; visible by default, hideable via **Show stats**. Daily goal is configurable (default 3). Replies count toward goal and total.
+
 **Editor (bottom)**
 - Auto-growing textarea for writing new posts in markdown (Cmd/Ctrl+Enter submits). The composer is a plain textarea, not a live-preview editor — but **posts in the timeline render the way Obsidian renders notes** (via `MarkdownRenderer`), and the per-post **Edit** action opens the real note in Obsidian's own editor for full editing.
 - Circular progress bar indicator showing character count relative to 300 char limit. You can write longer than 300 chars — it just affects the "read more" threshold in the timeline.

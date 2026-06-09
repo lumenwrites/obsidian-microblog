@@ -8,12 +8,18 @@ export interface MicroblogSettings {
 	charLimit: number;
 	/** Put the composer above the search bar and order posts newest/top-first. */
 	composerOnTop: boolean;
+	/** Target posts per day — drives the contribution graph fill and streak goal. */
+	dailyGoal: number;
+	/** Show the stats/streak widget under the composer. */
+	showStats: boolean;
 }
 
 export const DEFAULT_SETTINGS: MicroblogSettings = {
 	defaultFolder: "microblog",
 	charLimit: 300,
 	composerOnTop: true,
+	dailyGoal: 3,
+	showStats: true,
 };
 
 export class MicroblogSettingTab extends PluginSettingTab {
@@ -65,6 +71,32 @@ export class MicroblogSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.composerOnTop)
 					.onChange(async (value) => {
 						this.plugin.settings.composerOnTop = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName("Show stats")
+			.setDesc("Show the contribution graph, streak, and total under the composer.")
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.showStats)
+					.onChange(async (value) => {
+						this.plugin.settings.showStats = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName("Daily goal")
+			.setDesc("Target posts per day. A day's square fills as you approach it; the streak counts days you hit it.")
+			.addText((text) =>
+				text
+					.setValue(String(this.plugin.settings.dailyGoal))
+					.onChange(async (value) => {
+						const n = Number(value);
+						this.plugin.settings.dailyGoal =
+							Number.isFinite(n) && n > 0 ? Math.floor(n) : DEFAULT_SETTINGS.dailyGoal;
 						await this.plugin.saveSettings();
 					}),
 			);

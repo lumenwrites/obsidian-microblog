@@ -41,7 +41,7 @@ Because `setState` can fire before `onOpen()` creates the root, `renderApp()` gu
 - `MicroblogSettings` + `DEFAULT_SETTINGS` live in `src/settings.ts`.
 - Loaded in `onload()` via `Object.assign({}, DEFAULT_SETTINGS, await loadData())` (merge so new keys get defaults); saved via `saveData(settings)`.
 - The settings object lives on `plugin.settings` and is read in React through `useSettings()`. **Settings are reactive:** `saveSettings()` notifies subscribers (`plugin.onSettingsChange`), and `PluginProvider` subscribes and bumps state, so open views re-render live when a setting changes (e.g. toggling *Composer at top*).
-- `MicroblogSettingTab` renders the settings UI with Obsidian's `Setting` builder. Current settings: `defaultFolder`, `charLimit` (read-more fold), `composerOnTop` (composer above the bar + newest/top-first ordering).
+- `MicroblogSettingTab` renders the settings UI with Obsidian's `Setting` builder. Current settings: `defaultFolder`, `charLimit` (read-more fold), `composerOnTop` (composer above the bar + newest/top-first ordering), `showStats` (stats widget), `dailyGoal` (target posts/day).
 
 ## Data flow (the timeline)
 
@@ -60,6 +60,10 @@ Posts are plain notes; the plugin owns no database. The flow is one-directional 
 ### Threads / replies
 
 Each post's `id` is its filename stem; a reply stores the parent id in `reply_to` frontmatter (quoted so YAML can't coerce the timestamp-like id to a date). Threads are a pure transform over the already-live post list — no new events or subscriptions. `PostCard` indents by `min(depth, 5)` and draws a thread-line; the **Reply** action sets the composer's target (a "Replying to …" banner with cancel + autofocus). A reply whose parent isn't in the folder (renamed/deleted) renders as a root — no cascade on delete.
+
+### Stats / streak
+
+`lib/stats.ts` is pure math over the already-loaded posts (no I/O), so the widget is just another transform that stays live with the feed. Days are local (midnight boundary). The **graph** squares show *raw* per-day counts (`min(count/goal, 1)` → accent opacity) — an honest record. The **streak** is separate: walking from today backward, surplus posts beyond the goal flow into a "pool" that repairs earlier unmet days, but only within the last `BACKFILL_DAYS` (14) — bounding how much one big day can fabricate. Today gets a grace day (an unmet but in-progress today counts the streak from yesterday). Replies count toward both goal and total.
 
 ## Markdown rendering
 
@@ -134,9 +138,11 @@ src/
     Composer.tsx       textarea + char-count ring + NOTE button
     CharCountRing.tsx  circular char-count indicator
     MarkdownPreview.tsx renders a post body via MarkdownRenderer.render; intercepts #tag clicks
+    StatsWidget.tsx    contribution graph + backfilled streak + total (under the composer)
   lib/
     posts.ts           data layer: file ↔ Post CRUD over vault/metadataCache/fileManager
     confirm.ts         promise-based confirmation Modal (used by delete)
+    stats.ts           pure stats math: per-day counts, 30-day graph, backfilled streak
     utils.ts           cn() (clsx), formatPostDate()
   types/
     index.ts           Post, SortOrder

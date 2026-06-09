@@ -164,24 +164,6 @@
 	background: var(--background-modifier-hover);
 }
 
-/* The ⋯ dropdown menu: larger, touch-friendly rows (iPad). Scoped to our menu
-   via the class added in PostCard so other Obsidian menus are unaffected. */
-.microblog-post-menu.menu .menu-item {
-	padding: var(--size-4-3) var(--size-4-4);
-	font-size: var(--font-ui-medium);
-	line-height: 1.4;
-}
-
-.microblog-post-menu.menu .menu-item-icon {
-	width: 1.25em;
-	height: 1.25em;
-}
-
-.microblog-post-menu.menu .menu-item-icon svg {
-	width: 1.25em;
-	height: 1.25em;
-}
-
 /* Rendered markdown body. Tighten the default note margins inside a card. */
 .microblog-post-body :first-child {
 	margin-top: 0;
@@ -218,6 +200,63 @@
    they're clickable (we intercept the click to drive the search). */
 .microblog-post-body a.tag {
 	cursor: pointer;
+}
+
+/* ── Stats widget (contribution graph + streak + total) ───────────────────── */
+
+.microblog-stats {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3);
+	padding: var(--size-4-2) var(--size-4-4);
+	background: var(--background-primary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+/* 30 squares that flex to fill the row, shrinking on narrow panes. */
+.microblog-graph {
+	display: flex;
+	gap: 3px;
+	flex: 1;
+	min-width: 0;
+}
+
+.microblog-graph-cell {
+	flex: 1;
+	min-width: 5px;
+	max-width: 16px;
+	aspect-ratio: 1;
+	position: relative;
+	border-radius: 3px;
+	background: var(--background-modifier-border);
+}
+
+/* Accent overlay whose opacity is the day's fill (set inline via --fill). */
+.microblog-graph-cell::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: var(--interactive-accent);
+	opacity: var(--fill, 0);
+}
+
+.microblog-graph-cell.is-today {
+	outline: 1px solid var(--text-muted);
+	outline-offset: 1px;
+}
+
+.microblog-stat {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-4-1);
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+.microblog-stat-icon.is-streak {
+	color: var(--color-orange, #e9973f);
 }
 
 /* ── Composer ─────────────────────────────────────────────────────────────── */

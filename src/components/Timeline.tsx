@@ -6,6 +6,7 @@ import type { Post, SortOrder } from "../types";
 import { Composer } from "./Composer";
 import { PostCard } from "./PostCard";
 import { SearchSortBar } from "./SearchSortBar";
+import { StatsWidget } from "./StatsWidget";
 
 /** A post placed in display order, with its nesting depth in the thread tree. */
 interface Row {
@@ -103,6 +104,7 @@ export function Timeline() {
 			onCancelReply={() => setReplyTarget(null)}
 		/>
 	);
+	const stats = settings.showStats ? <StatsWidget posts={posts} /> : null;
 	const feed = (
 		<div className="microblog-feed" ref={feedRef}>
 			{rows.length === 0 ? (
@@ -129,6 +131,7 @@ export function Timeline() {
 			{composerOnTop ? (
 				<>
 					{composer}
+					{stats}
 					{bar}
 					{feed}
 				</>
@@ -137,6 +140,7 @@ export function Timeline() {
 					{bar}
 					{feed}
 					{composer}
+					{stats}
 				</>
 			)}
 		</div>
