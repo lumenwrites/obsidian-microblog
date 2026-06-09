@@ -8,6 +8,22 @@ import { cn } from "../lib/utils";
 import type { Post } from "../types";
 import { CharCountRing } from "./CharCountRing";
 
+/**
+ * Obsidian mobile is a Capacitor app; its bundled Keyboard plugin is reachable at
+ * `window.Capacitor.Plugins.Keyboard`. We only need `setAccessoryBarVisible` to hide the
+ * native iOS bar that sits above the keyboard for a focused <textarea>. Returns undefined
+ * on desktop (no Capacitor) so callers can no-op safely.
+ */
+interface CapacitorKeyboard {
+	setAccessoryBarVisible?: (opts: { isVisible: boolean }) => void;
+}
+function getCapacitorKeyboard(): CapacitorKeyboard | undefined {
+	const cap = (window as unknown as {
+		Capacitor?: { Plugins?: { Keyboard?: CapacitorKeyboard } };
+	}).Capacitor;
+	return cap?.Plugins?.Keyboard;
+}
+
 /** One-line preview of the post being replied to, for the composer banner. */
 function replySnippet(post: Post): string {
 	const text = post.body.replace(/\s+/g, " ").trim();
@@ -67,46 +83,30 @@ export function Composer({
 				void submitRef.current();
 			}
 		};
-		// Obsidian's native mobile toolbar (the bar above the soft keyboard) is hard-wired
-		// to the active CodeMirror editor. Our composer is a plain <textarea> in a custom
-		// view, so when it's focused the toolbar has no editor to populate itself from and
-		// renders as an empty, tall black bar. We flag the body while focused so CSS can hide
-		// that broken shell (see styles.css → `.mobile-toolbar`). Cleanup clears the flag even
-		// if we unmount while still focused (blur wouldn't fire).
+		// The tall black bar above the keyboard is the native iOS input-accessory view that
+		// WKWebView puts over a focused <textarea>. It is NOT a DOM element (confirmed: no
+		// `.mobile-toolbar` exists and a position scan found no bottom bar), so CSS can't
+		// touch it. Obsidian hides it for its own editor and draws `.mobile-toolbar` instead;
+		// our plain textarea gets the raw native bar. The only lever from JS is Obsidian's
+		// bundled Capacitor Keyboard plugin: `setAccessoryBarVisible({ isVisible: false })`.
+		// We hide it on focus and restore on blur so other parts of the app are unaffected.
+		// The body class is kept only so the (harmless) CSS rule can still catch a stray
+		// `.mobile-toolbar` if one ever appears. Cleanup runs even if we unmount while focused.
 		const FOCUS_CLASS = "microblog-composer-focused";
-		// The toolbar is created *after* focus (once the keyboard animates up), so we also
-		// re-hide on a short delay and report what we actually find. The Notice is a
-		// temporary mobile-friendly diagnostic so we can confirm the real element/class.
-		let diag: number | undefined;
+		const keyboard = getCapacitorKeyboard();
+		let probed = false;
 		const onFocus = () => {
 			activeDocument.body.addClass(FOCUS_CLASS);
-			window.clearTimeout(diag);
-			diag = window.setTimeout(() => {
-				// Find every wide fixed/absolute bar in the lower half of the screen, whatever
-				// its class. Reports tag.class plus vertical extent (top–bottom, height) so we
-				// can identify the mystery black bar even if it has an unexpected class name.
-				const vw = window.innerWidth;
-				const vh = window.innerHeight;
-				const hits: string[] = [];
-				activeDocument.querySelectorAll<HTMLElement>("body *").forEach((el) => {
-					const cs = window.getComputedStyle(el);
-					if (cs.position !== "fixed" && cs.position !== "absolute") return;
-					const r = el.getBoundingClientRect();
-					if (r.width < vw * 0.6 || r.height === 0 || r.bottom < vh * 0.4) return;
-					const klass = el.getAttribute("class")?.trim() || "(no class)";
-					hits.push(
-						`${el.tagName.toLowerCase()}.${klass} | y ${Math.round(r.top)}–${Math.round(r.bottom)} h${Math.round(r.height)}`,
-					);
-				});
-				new Notice(
-					`bottom bars (vh=${Math.round(vh)}):\n${hits.join("\n") || "none"}`,
-					20000,
-				);
-			}, 700);
+			keyboard?.setAccessoryBarVisible?.({ isVisible: false });
+			// One-time probe so we can confirm on-device whether the bridge is even present.
+			if (!probed) {
+				probed = true;
+				new Notice(`keyboard bridge: ${keyboard ? "found" : "MISSING"}`, 6000);
+			}
 		};
 		const onBlur = () => {
 			activeDocument.body.removeClass(FOCUS_CLASS);
-			window.clearTimeout(diag);
+			keyboard?.setAccessoryBarVisible?.({ isVisible: true });
 		};
 		el.addEventListener("keydown", onKeyDown, true);
 		el.addEventListener("focus", onFocus);
@@ -115,8 +115,8 @@ export function Composer({
 			el.removeEventListener("keydown", onKeyDown, true);
 			el.removeEventListener("focus", onFocus);
 			el.removeEventListener("blur", onBlur);
-			window.clearTimeout(diag);
 			activeDocument.body.removeClass(FOCUS_CLASS);
+			keyboard?.setAccessoryBarVisible?.({ isVisible: true });
 		};
 	}, []);
 
