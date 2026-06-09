@@ -13,7 +13,7 @@ export interface MicroblogSettings {
 export const DEFAULT_SETTINGS: MicroblogSettings = {
 	defaultFolder: "microblog",
 	charLimit: 300,
-	composerOnTop: false,
+	composerOnTop: true,
 };
 
 export class MicroblogSettingTab extends PluginSettingTab {

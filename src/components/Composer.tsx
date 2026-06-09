@@ -91,7 +91,7 @@ export function Composer({
 			<TextareaAutosize
 				ref={textareaRef}
 				className="microblog-composer-input"
-				placeholder="Write something funny…"
+				placeholder="Write something…"
 				value={value}
 				minRows={2}
 				maxRows={12}
