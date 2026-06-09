@@ -208,7 +208,7 @@
  * `.microblog-root`, and on desktop the element doesn't exist so the rule is a no-op.
  */
 body.microblog-composer-focused .mobile-toolbar {
-	display: none;
+	display: none !important;
 }
 
 .microblog-composer {

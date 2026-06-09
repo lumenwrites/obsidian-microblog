@@ -1,5 +1,6 @@
 import { faPaperPlane, faReply, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Notice } from "obsidian";
 import { useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { useSettings } from "../context/PluginContext";
@@ -73,8 +74,29 @@ export function Composer({
 		// that broken shell (see styles.css → `.mobile-toolbar`). Cleanup clears the flag even
 		// if we unmount while still focused (blur wouldn't fire).
 		const FOCUS_CLASS = "microblog-composer-focused";
-		const onFocus = () => activeDocument.body.addClass(FOCUS_CLASS);
-		const onBlur = () => activeDocument.body.removeClass(FOCUS_CLASS);
+		// The toolbar is created *after* focus (once the keyboard animates up), so we also
+		// re-hide on a short delay and report what we actually find. The Notice is a
+		// temporary mobile-friendly diagnostic so we can confirm the real element/class.
+		let diag: number | undefined;
+		const onFocus = () => {
+			activeDocument.body.addClass(FOCUS_CLASS);
+			window.clearTimeout(diag);
+			diag = window.setTimeout(() => {
+				const candidates = Array.from(
+					activeDocument.querySelectorAll<HTMLElement>(
+						'[class*="toolbar"], [class*="navbar"], [class*="keyboard"], [class*="accessory"]',
+					),
+				);
+				const report = candidates
+					.map((c) => `${c.className} (${c.childElementCount} kids)`)
+					.join("\n");
+				new Notice(`microblog toolbar diag:\n${report || "none found"}`, 15000);
+			}, 700);
+		};
+		const onBlur = () => {
+			activeDocument.body.removeClass(FOCUS_CLASS);
+			window.clearTimeout(diag);
+		};
 		el.addEventListener("keydown", onKeyDown, true);
 		el.addEventListener("focus", onFocus);
 		el.addEventListener("blur", onBlur);
@@ -82,6 +104,7 @@ export function Composer({
 			el.removeEventListener("keydown", onKeyDown, true);
 			el.removeEventListener("focus", onFocus);
 			el.removeEventListener("blur", onBlur);
+			window.clearTimeout(diag);
 			activeDocument.body.removeClass(FOCUS_CLASS);
 		};
 	}, []);
