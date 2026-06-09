@@ -455,6 +455,7 @@
 
 /* ── Tag input (composer, left of the char-count ring) ────────────────────── */
 
+/* Bordered box styled like the search input (a leading icon + chips + a field). */
 .microblog-taginput {
 	position: relative;
 	flex: 1;
@@ -463,7 +464,20 @@
 	flex-wrap: wrap;
 	align-items: center;
 	gap: var(--size-2-2);
+	padding: var(--size-2-2) var(--size-4-2);
+	background: var(--background-modifier-form-field);
+	border: var(--input-border-width, 1px) solid var(--background-modifier-border);
+	border-radius: var(--input-radius, var(--radius-s));
 	cursor: text;
+}
+
+.microblog-taginput:focus-within {
+	border-color: var(--background-modifier-border-focus);
+}
+
+.microblog-taginput-icon {
+	flex: none;
+	color: var(--text-muted);
 }
 
 /* Committed-tag chips; click to remove (the ✕ hints it). */

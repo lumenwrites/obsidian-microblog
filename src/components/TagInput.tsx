@@ -1,4 +1,4 @@
-import { faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faTag, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ChangeEvent, KeyboardEvent, useMemo, useRef, useState } from "react";
 import { cn } from "../lib/utils";
@@ -85,6 +85,7 @@ export function TagInput({
 
 	return (
 		<div className="microblog-taginput" onClick={() => inputRef.current?.focus()}>
+			<FontAwesomeIcon icon={faTag} className="microblog-taginput-icon" />
 			{tags.map((tag) => (
 				<button
 					key={tag}

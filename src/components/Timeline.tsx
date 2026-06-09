@@ -1,3 +1,4 @@
+import { getAllTags } from "obsidian";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp, useFolderPath, useSettings } from "../context/PluginContext";
 import { usePosts } from "../hooks/usePosts";
@@ -106,12 +107,18 @@ export function Timeline() {
 		if (el) el.scrollTop = composerOnTop ? 0 : el.scrollHeight;
 	}, [rows.length, composerOnTop]);
 
-	// Distinct tags across the folder, for composer autocomplete.
+	// Distinct tags across the folder for composer autocomplete. Drawn from *all* tags
+	// in the folder's posts (inline #hashtags + frontmatter), not just our structured
+	// `post.tags`, so existing material seeds the suggestions even before any post uses
+	// the new tags field.
 	const allTags = useMemo(() => {
 		const set = new Set<string>();
-		for (const p of posts) for (const t of p.tags) set.add(t);
+		for (const p of posts) {
+			const cache = app.metadataCache.getFileCache(p.file);
+			if (cache) for (const t of getAllTags(cache) ?? []) set.add(t.replace(/^#/, ""));
+		}
 		return [...set].sort((a, b) => a.localeCompare(b));
-	}, [posts]);
+	}, [posts, app]);
 
 	const addPost = async (body: string, tags: string[]) => {
 		await createPost(app, folderPath, body, { tags, replyTo: replyTarget?.id });
