@@ -14,6 +14,7 @@ Read `docs/spec.md` for what we're building and what's implemented.
 - `docs/spec.md` — What the plugin does (implemented) and what's planned. **Source of truth for the product.**
 - `docs/architecture.md` — How it's built: the Obsidian↔React integration (view mounting, context, settings, build). **Read when working on the plugin.**
 - `docs/best-practices.md` — Coding conventions, component patterns, Obsidian API gotchas. **Always read before writing code.**
+- `docs/plan-stats.md` — Plan for the stats/streak widget (in progress; not yet built).
 
 
 # Documentation

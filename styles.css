@@ -164,6 +164,24 @@
 	background: var(--background-modifier-hover);
 }
 
+/* The ⋯ dropdown menu: larger, touch-friendly rows (iPad). Scoped to our menu
+   via the class added in PostCard so other Obsidian menus are unaffected. */
+.microblog-post-menu.menu .menu-item {
+	padding: var(--size-4-3) var(--size-4-4);
+	font-size: var(--font-ui-medium);
+	line-height: 1.4;
+}
+
+.microblog-post-menu.menu .menu-item-icon {
+	width: 1.25em;
+	height: 1.25em;
+}
+
+.microblog-post-menu.menu .menu-item-icon svg {
+	width: 1.25em;
+	height: 1.25em;
+}
+
 /* Rendered markdown body. Tighten the default note margins inside a card. */
 .microblog-post-body :first-child {
 	margin-top: 0;
