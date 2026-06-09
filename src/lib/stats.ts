@@ -2,14 +2,22 @@ import type { Post } from "../types";
 
 /**
  * Pure stats math for the streak widget. Days are local (boundary = local midnight).
- * All functions take `now` so they're deterministic and testable.
+ * `now` is passed in so the functions are deterministic and testable.
+ *
+ * One carry pass (`dayStats`) computes everything: surplus posts beyond the daily goal
+ * flow backward to repair earlier unmet days within a window, and both the contribution
+ * graph and the streak read from the same result — so a backfilled day shows as filled
+ * *and* counts toward the streak, consistently.
  */
 
-/** Recent days whose gaps surplus posts may backfill (streak repair window). */
+/** Recent days whose gaps surplus posts may backfill (repair window). */
 export const BACKFILL_DAYS = 14;
 
 /** Days shown in the contribution graph. */
 export const GRAPH_DAYS = 30;
+
+/** Upper bound on history scanned for the streak. */
+const MAX_DAYS = 400;
 
 /** Local `YYYY-MM-DD` key for a Date. */
 function keyOf(d: Date): string {
@@ -39,69 +47,87 @@ export function countsByDay(posts: Post[]): Map<string, number> {
 	return counts;
 }
 
-/** One day in the contribution graph. `ratio` = raw progress toward the goal (0–1). */
-export interface DayCell {
+/** One day's resolved stats after backfill. `ratio` is the fill (0–1) shown in the graph. */
+export interface DayStat {
 	key: string;
 	date: Date;
+	/** Raw posts created that day. */
 	count: number;
+	/** Fill toward the goal after backfill (0–1). */
 	ratio: number;
+	/** Whether the goal was met (own posts + backfill). */
+	satisfied: boolean;
+	/** True if backfill lifted this day's fill above what its own posts give. */
+	backfilled: boolean;
 	isToday: boolean;
 }
 
-/** The last GRAPH_DAYS days, oldest → today. Squares reflect *raw* daily counts. */
-export function graphDays(counts: Map<string, number>, goal: number, now: Date): DayCell[] {
+/**
+ * Resolve each day from today backward, carrying a surplus "pool". A day's available
+ * credit = its own count + pool (within the repair window); it consumes up to the goal
+ * and passes any remainder further back. Beyond the window, days stand on their own
+ * count (and don't generate carry) — bounding how much one huge day can fabricate.
+ */
+export function dayStats(
+	counts: Map<string, number>,
+	goal: number,
+	now: Date,
+	maxDays: number = MAX_DAYS,
+): DayStat[] {
 	const today = startOfDay(now);
-	const cells: DayCell[] = [];
-	for (let i = GRAPH_DAYS - 1; i >= 0; i--) {
-		const date = addDays(today, -i);
+	const out: DayStat[] = [];
+	let pool = 0;
+
+	for (let d = 0; d < maxDays; d++) {
+		const date = addDays(today, -d);
 		const count = counts.get(keyOf(date)) ?? 0;
-		const ratio = goal > 0 ? Math.min(count / goal, 1) : count > 0 ? 1 : 0;
-		cells.push({ key: keyOf(date), date, count, ratio, isToday: i === 0 });
+		const withinWindow = d < BACKFILL_DAYS;
+		const available = count + (withinWindow ? pool : 0);
+
+		const ratio = goal > 0 ? Math.min(available, goal) / goal : count > 0 ? 1 : 0;
+		const ownRatio = goal > 0 ? Math.min(count, goal) / goal : count > 0 ? 1 : 0;
+
+		out.push({
+			key: keyOf(date),
+			date,
+			count,
+			ratio,
+			satisfied: goal > 0 && available >= goal,
+			backfilled: ratio > ownRatio + 1e-9,
+			isToday: d === 0,
+		});
+
+		pool = withinWindow && available > goal ? available - goal : 0;
 	}
-	return cells;
+	return out;
+}
+
+/** The last GRAPH_DAYS days, oldest → today (for the contribution graph). */
+export function graphCells(stats: DayStat[]): DayStat[] {
+	return stats.slice(0, GRAPH_DAYS).reverse();
 }
 
 /**
- * Consecutive days the goal was met, ending today — with backfill: surplus posts
- * (beyond the goal) flow backward to repair gaps within the last BACKFILL_DAYS.
- *
- * Walk from today backward carrying a surplus "pool"; a day is satisfied if its own
- * count plus the pool meets the goal. Backfill (using/creating pool) is only applied
- * within the repair window — beyond it, days must stand on their own count, which
- * bounds how much one huge day can fabricate. Today gets grace: if it isn't met yet
- * (in progress), the streak counts from yesterday so it doesn't break mid-day.
+ * Consecutive satisfied days ending today. Grace: an unmet but in-progress today
+ * doesn't break the streak — it counts from yesterday instead.
  */
-export function computeStreak(counts: Map<string, number>, goal: number, now: Date): number {
-	if (goal <= 0) return 0;
-	const today = startOfDay(now);
-	const MAX_DAYS = 400; // safety bound on history scanned
-
-	const satisfied: boolean[] = [];
-	let pool = 0;
-	for (let d = 0; d < MAX_DAYS; d++) {
-		const count = counts.get(keyOf(addDays(today, -d))) ?? 0;
-		const withinWindow = d < BACKFILL_DAYS;
-		const available = count + (withinWindow ? pool : 0);
-		if (available >= goal) {
-			satisfied[d] = true;
-			pool = withinWindow ? available - goal : 0;
-		} else {
-			satisfied[d] = false;
-			pool = 0;
-		}
-	}
-
-	// Grace: an unmet but in-progress today doesn't break the streak — start at yesterday.
-	const start = satisfied[0] ? 0 : 1;
+export function streakLength(stats: DayStat[]): number {
+	if (stats.length === 0) return 0;
+	const start = stats[0].satisfied ? 0 : 1;
 	let streak = 0;
-	for (let d = start; d < MAX_DAYS; d++) {
-		if (satisfied[d]) streak++;
+	for (let d = start; d < stats.length; d++) {
+		if (stats[d].satisfied) streak++;
 		else break;
 	}
 	return streak;
 }
 
-/** All-time post count for this folder. */
-export function totalPosts(posts: Post[]): number {
-	return posts.length;
+/** Everything the widget needs, from one carry pass. */
+export function computeStats(
+	posts: Post[],
+	goal: number,
+	now: Date,
+): { cells: DayStat[]; streak: number; total: number } {
+	const stats = dayStats(countsByDay(posts), goal, now);
+	return { cells: graphCells(stats), streak: streakLength(stats), total: posts.length };
 }

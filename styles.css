@@ -259,6 +259,11 @@
 	color: var(--color-orange, #e9973f);
 }
 
+/* Match the filled contribution squares. */
+.microblog-stat-icon.is-total {
+	color: var(--interactive-accent);
+}
+
 /* ── Composer ─────────────────────────────────────────────────────────────── */
 
 .microblog-composer {

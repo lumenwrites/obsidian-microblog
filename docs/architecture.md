@@ -63,7 +63,7 @@ Each post's `id` is its filename stem; a reply stores the parent id in `reply_to
 
 ### Stats / streak
 
-`lib/stats.ts` is pure math over the already-loaded posts (no I/O), so the widget is just another transform that stays live with the feed. Days are local (midnight boundary). The **graph** squares show *raw* per-day counts (`min(count/goal, 1)` → accent opacity) — an honest record. The **streak** is separate: walking from today backward, surplus posts beyond the goal flow into a "pool" that repairs earlier unmet days, but only within the last `BACKFILL_DAYS` (14) — bounding how much one big day can fabricate. Today gets a grace day (an unmet but in-progress today counts the streak from yesterday). Replies count toward both goal and total.
+`lib/stats.ts` is pure math over the already-loaded posts (no I/O), so the widget is just another transform that stays live with the feed. Days are local (midnight boundary). A single carry pass (`dayStats`) resolves every day: walking from today backward, surplus posts beyond the goal flow into a "pool" that repairs earlier unmet days, but only within the last `BACKFILL_DAYS` (14) — bounding how much one big day can fabricate. Both outputs read from that one pass, so they're consistent: the **graph** square fill is each day's backfilled `ratio` (`min(available/goal, 1)` → accent opacity; a backfilled day shows filled and its tooltip says so), and the **streak** counts consecutive `satisfied` days. Today gets a grace day (an unmet but in-progress today counts the streak from yesterday). Replies count toward both goal and total.
 
 ## Markdown rendering
 
@@ -142,7 +142,7 @@ src/
   lib/
     posts.ts           data layer: file ↔ Post CRUD over vault/metadataCache/fileManager
     confirm.ts         promise-based confirmation Modal (used by delete)
-    stats.ts           pure stats math: per-day counts, 30-day graph, backfilled streak
+    stats.ts           pure stats math: one carry pass → backfilled 30-day graph + streak
     utils.ts           cn() (clsx), formatPostDate()
   types/
     index.ts           Post, SortOrder

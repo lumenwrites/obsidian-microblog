@@ -2,7 +2,7 @@ import { faFire, faSquare } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CSSProperties, useMemo } from "react";
 import { useSettings } from "../context/PluginContext";
-import { computeStreak, countsByDay, graphDays, totalPosts } from "../lib/stats";
+import { computeStats } from "../lib/stats";
 import { cn } from "../lib/utils";
 import type { Post } from "../types";
 
@@ -13,35 +13,33 @@ function formatDay(d: Date): string {
 
 /**
  * Motivation widget under the composer: a 30-day contribution graph (squares fill
- * toward the daily goal), a backfilled day-streak, and the all-time post total.
- * All math is a pure transform over the already-loaded posts (see lib/stats.ts).
+ * toward the daily goal, including backfill), a backfilled day-streak, and the
+ * all-time post total. All math is a pure transform over the loaded posts (lib/stats).
  */
 export function StatsWidget({ posts }: { posts: Post[] }) {
 	const settings = useSettings();
 	const goal = settings.dailyGoal;
 
-	const { cells, streak, total } = useMemo(() => {
-		const now = new Date();
-		const counts = countsByDay(posts);
-		return {
-			cells: graphDays(counts, goal, now),
-			streak: computeStreak(counts, goal, now),
-			total: totalPosts(posts),
-		};
-	}, [posts, goal]);
+	const { cells, streak, total } = useMemo(
+		() => computeStats(posts, goal, new Date()),
+		[posts, goal],
+	);
 
 	return (
 		<div className="microblog-stats">
 			<div className="microblog-graph">
 				{cells.map((cell) => {
 					// Empty days stay blank; the first post is already pale, full at the goal.
-					const fill = cell.count === 0 ? 0 : 0.25 + 0.75 * cell.ratio;
+					const fill = cell.ratio === 0 ? 0 : 0.25 + 0.75 * cell.ratio;
 					const noun = cell.count === 1 ? "post" : "posts";
+					const title =
+						`${formatDay(cell.date)}: ${cell.count} ${noun}` +
+						(cell.backfilled ? " (backfilled)" : "");
 					return (
 						<div
 							key={cell.key}
 							className={cn("microblog-graph-cell", cell.isToday && "is-today")}
-							title={`${formatDay(cell.date)}: ${cell.count} ${noun}`}
+							title={title}
 							style={{ "--fill": fill } as CSSProperties}
 						/>
 					);
@@ -53,7 +51,7 @@ export function StatsWidget({ posts }: { posts: Post[] }) {
 				<span>{streak}</span>
 			</div>
 			<div className="microblog-stat" title="Total posts">
-				<FontAwesomeIcon icon={faSquare} className="microblog-stat-icon" />
+				<FontAwesomeIcon icon={faSquare} className="microblog-stat-icon is-total" />
 				<span>{total}</span>
 			</div>
 		</div>
