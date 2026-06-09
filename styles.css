@@ -1,0 +1,59 @@
+/*
+ * Microblog plugin styles.
+ *
+ * Everything is scoped under `.microblog-root` (added to the view's contentEl) so
+ * nothing leaks into the rest of Obsidian. Colors/spacing come from Obsidian's CSS
+ * variables, so the plugin matches the user's theme (light/dark/custom) for free.
+ *
+ * This file is hand-written, committed source — Obsidian loads it directly. esbuild
+ * does NOT touch it; it only bundles main.js.
+ */
+
+.microblog-root {
+	height: 100%;
+	overflow: hidden;
+}
+
+.microblog-app {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	padding: var(--size-4-4);
+	gap: var(--size-4-4);
+	color: var(--text-normal);
+	font-size: var(--font-text-size);
+}
+
+.microblog-header {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+}
+
+.microblog-header h2 {
+	margin: 0;
+	font-size: var(--h2-size);
+}
+
+.microblog-header-icon {
+	color: var(--interactive-accent);
+	font-size: 1.2em;
+}
+
+.microblog-panel {
+	padding: var(--size-4-4);
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+}
+
+.microblog-panel p {
+	margin-top: 0;
+	color: var(--text-muted);
+}
+
+.microblog-facts {
+	margin: 0;
+	padding-left: var(--size-4-4);
+	line-height: var(--line-height-normal);
+}
