@@ -82,15 +82,26 @@ export function Composer({
 			activeDocument.body.addClass(FOCUS_CLASS);
 			window.clearTimeout(diag);
 			diag = window.setTimeout(() => {
-				const candidates = Array.from(
-					activeDocument.querySelectorAll<HTMLElement>(
-						'[class*="toolbar"], [class*="navbar"], [class*="keyboard"], [class*="accessory"]',
-					),
+				// Find every wide fixed/absolute bar in the lower half of the screen, whatever
+				// its class. Reports tag.class plus vertical extent (top–bottom, height) so we
+				// can identify the mystery black bar even if it has an unexpected class name.
+				const vw = window.innerWidth;
+				const vh = window.innerHeight;
+				const hits: string[] = [];
+				activeDocument.querySelectorAll<HTMLElement>("body *").forEach((el) => {
+					const cs = window.getComputedStyle(el);
+					if (cs.position !== "fixed" && cs.position !== "absolute") return;
+					const r = el.getBoundingClientRect();
+					if (r.width < vw * 0.6 || r.height === 0 || r.bottom < vh * 0.4) return;
+					const klass = el.getAttribute("class")?.trim() || "(no class)";
+					hits.push(
+						`${el.tagName.toLowerCase()}.${klass} | y ${Math.round(r.top)}–${Math.round(r.bottom)} h${Math.round(r.height)}`,
+					);
+				});
+				new Notice(
+					`bottom bars (vh=${Math.round(vh)}):\n${hits.join("\n") || "none"}`,
+					20000,
 				);
-				const report = candidates
-					.map((c) => `${c.className} (${c.childElementCount} kids)`)
-					.join("\n");
-				new Notice(`microblog toolbar diag:\n${report || "none found"}`, 15000);
 			}, 700);
 		};
 		const onBlur = () => {
