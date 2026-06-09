@@ -114,23 +114,19 @@ export async function adjustScore(app: App, file: TFile, delta: number): Promise
 	});
 }
 
-/** Move a post to the trash (respects the user's "deleted files" setting). */
-export async function deletePost(app: App, file: TFile): Promise<void> {
-	await app.fileManager.trashFile(file);
-}
-
-/** Subfolder (beside the post) that archived posts are moved into. */
+/** Subfolders (beside the post, inside the timeline folder) posts get moved into. */
 export const ARCHIVE_DIR = "archived";
+export const TRASH_DIR = "trash";
 
 /**
- * Move a post into an `archived/` subfolder next to it (created if needed). Because
- * the timeline lists only *direct* children of its folder, archived posts drop out of
- * the timeline and stats but stay in the vault — reversible, and the archive folder
- * can itself be opened as a timeline. Uses `renameFile` so links are preserved.
+ * Move a post into a `<subdir>/` folder next to it (created if needed). Because the
+ * timeline lists only *direct* children of its folder, the post drops out of the
+ * timeline and stats but stays in the vault — reversible (move it back), and the
+ * subfolder can itself be opened as a timeline. Uses `renameFile` so links are kept.
  */
-export async function archivePost(app: App, file: TFile): Promise<void> {
+async function moveToSubfolder(app: App, file: TFile, subdir: string): Promise<void> {
 	const parent = file.parent?.path ?? "";
-	const dir = normalizePath(parent ? `${parent}/${ARCHIVE_DIR}` : ARCHIVE_DIR);
+	const dir = normalizePath(parent ? `${parent}/${subdir}` : subdir);
 	if (!(app.vault.getAbstractFileByPath(dir) instanceof TFolder)) {
 		await app.vault.createFolder(dir);
 	}
@@ -140,6 +136,16 @@ export async function archivePost(app: App, file: TFile): Promise<void> {
 		target = `${dir}/${file.basename}-${i}.${file.extension}`;
 	}
 	await app.fileManager.renameFile(file, target);
+}
+
+/** Move a post into the timeline's `archived/` subfolder. */
+export async function archivePost(app: App, file: TFile): Promise<void> {
+	await moveToSubfolder(app, file, ARCHIVE_DIR);
+}
+
+/** Move a post into the timeline's `trash/` subfolder (beside `archived/`). */
+export async function deletePost(app: App, file: TFile): Promise<void> {
+	await moveToSubfolder(app, file, TRASH_DIR);
 }
 
 /** Open a post in a new tab for full editing in Obsidian's real editor. */

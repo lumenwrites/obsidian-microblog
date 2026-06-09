@@ -52,7 +52,7 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
 - Each post has:
   - Upvote / downvote buttons (modify the post's score)
   - Edit button — opens the real note in Obsidian's editor
-  - A ⋯ menu with: Reply (starts a reply, forming a thread — see Threads below); Share (cross-post to Bluesky/Mastodon — planned; placeholder for now); Archive (moves the note into an `archived/` subfolder of the timeline folder, so it leaves the timeline and stats but stays in the vault — reversible; the archive folder can itself be opened as a timeline); Delete (moves the note straight to vault trash — recoverable from there, so no confirmation).
+  - A ⋯ menu with: Reply (starts a reply, forming a thread — see Threads below); Share (cross-post to Bluesky/Mastodon — planned; placeholder for now); Archive (moves the note into an `archived/` subfolder of the timeline folder); Delete (moves the note into a `trash/` subfolder, beside `archived/`). Both leave the timeline and stats but stay in the vault — reversible (move them back), and either subfolder can itself be opened as a timeline. Delete has no confirmation.
 
 **Threads / Replies**
 - Any post can reply to another (stored as a quoted `reply_to: "<parent-id>"` in frontmatter, where the id is the parent's filename stem). Replies nest under their parent in the timeline, indented with a thread line (indentation caps at depth 5 so deep chains stay readable). Enables play-by-post roleplaying threads (replying to your own posts).
