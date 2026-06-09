@@ -1,5 +1,5 @@
 import type { App as ObsidianApp } from "obsidian";
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import type MicroblogPlugin from "../main";
 import type { MicroblogSettings } from "../settings";
 
@@ -25,6 +25,11 @@ export function PluginProvider({
 	folderPath: string | undefined;
 	children: ReactNode;
 }) {
+	// Re-render the whole tree when settings are saved, so hooks like useSettings()
+	// reflect changes live (e.g. toggling the composer-on-top layout).
+	const [, setTick] = useState(0);
+	useEffect(() => plugin.onSettingsChange(() => setTick((t) => t + 1)), [plugin]);
+
 	return (
 		<PluginContext.Provider value={{ plugin, folderPath }}>
 			{children}

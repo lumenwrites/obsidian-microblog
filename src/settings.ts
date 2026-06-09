@@ -6,11 +6,14 @@ export interface MicroblogSettings {
 	defaultFolder: string;
 	/** Soft character limit — posts longer than this fold behind a "read more" toggle. */
 	charLimit: number;
+	/** Put the composer above the search bar and order posts newest/top-first. */
+	composerOnTop: boolean;
 }
 
 export const DEFAULT_SETTINGS: MicroblogSettings = {
 	defaultFolder: "microblog",
 	charLimit: 300,
+	composerOnTop: false,
 };
 
 export class MicroblogSettingTab extends PluginSettingTab {
@@ -48,6 +51,20 @@ export class MicroblogSettingTab extends PluginSettingTab {
 						const n = Number(value);
 						this.plugin.settings.charLimit =
 							Number.isFinite(n) && n > 0 ? n : DEFAULT_SETTINGS.charLimit;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName("Composer at top")
+			.setDesc(
+				"Show the post box above the search bar, with the newest (or top-scoring) posts first.",
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.composerOnTop)
+					.onChange(async (value) => {
+						this.plugin.settings.composerOnTop = value;
 						await this.plugin.saveSettings();
 					}),
 			);

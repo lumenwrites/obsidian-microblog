@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Notice } from "obsidian";
 import { useState } from "react";
 import { useApp, useSettings } from "../context/PluginContext";
+import { confirm } from "../lib/confirm";
 import { adjustScore, deletePost, openPost } from "../lib/posts";
 import { cn, formatPostDate } from "../lib/utils";
 import type { Post } from "../types";
@@ -35,6 +36,16 @@ export function PostCard({
 		new Notice("Cross-posting isn't set up yet.");
 	};
 
+	const remove = async () => {
+		const ok = await confirm(app, {
+			title: "Delete post",
+			message: "This moves the note to your vault trash. You can restore it from there.",
+			cta: "Delete",
+			danger: true,
+		});
+		if (ok) await deletePost(app, post.file);
+	};
+
 	return (
 		<article className="microblog-post">
 			<div className="microblog-post-header">
@@ -53,30 +64,24 @@ export function PostCard({
 					<button title="Edit in editor" onClick={() => void openPost(app, post.file)}>
 						<FontAwesomeIcon icon={faPenToSquare} />
 					</button>
-					<button title="Delete" onClick={() => void deletePost(app, post.file)}>
+					<button title="Delete" onClick={() => void remove()}>
 						<FontAwesomeIcon icon={faTrash} />
 					</button>
 				</div>
 			</div>
 
 			<div className={cn("microblog-post-body", foldable && !expanded && "is-collapsed")}>
-				<MarkdownPreview markdown={post.body} sourcePath={post.path} />
+				<MarkdownPreview
+					markdown={post.body}
+					sourcePath={post.path}
+					onTagClick={onSelectTag}
+				/>
 			</div>
 
 			{foldable && (
 				<button className="microblog-readmore" onClick={() => setExpanded((v) => !v)}>
 					{expanded ? "Show less" : "Read more"}
 				</button>
-			)}
-
-			{post.tags.length > 0 && (
-				<div className="microblog-post-tags">
-					{post.tags.map((tag) => (
-						<button key={tag} className="microblog-tag" onClick={() => onSelectTag(tag)}>
-							{tag}
-						</button>
-					))}
-				</div>
 			)}
 		</article>
 	);

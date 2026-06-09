@@ -19,6 +19,7 @@ export function Timeline() {
 	const settings = useSettings();
 	const folderPath = useFolderPath() ?? settings.defaultFolder;
 	const posts = usePosts(folderPath);
+	const composerOnTop = settings.composerOnTop;
 
 	const [search, setSearch] = useState("");
 	const [sort, setSort] = useState<SortOrder>("chronological");
@@ -33,40 +34,55 @@ export function Timeline() {
 						p.tags.some((t) => t.toLowerCase().includes(q)),
 				)
 			: posts;
-		return [...filtered].sort((a, b) =>
-			sort === "score" ? a.score - b.score || a.created - b.created : a.created - b.created,
+		// Composer-at-bottom: ascending (newest/top nearest the composer below).
+		// Composer-at-top: descending (newest/top first, just under the composer above).
+		const dir = composerOnTop ? -1 : 1;
+		return [...filtered].sort(
+			(a, b) =>
+				dir *
+				(sort === "score" ? a.score - b.score || a.created - b.created : a.created - b.created),
 		);
-	}, [posts, search, sort]);
+	}, [posts, search, sort, composerOnTop]);
 
-	// Bottom-anchored: jump to the newest post whenever the visible set changes.
+	// Anchor the feed to the composer's edge whenever the visible set changes.
 	useEffect(() => {
 		const el = feedRef.current;
-		if (el) el.scrollTop = el.scrollHeight;
-	}, [visible.length]);
+		if (el) el.scrollTop = composerOnTop ? 0 : el.scrollHeight;
+	}, [visible.length, composerOnTop]);
 
 	const addPost = async (body: string) => {
 		await createPost(app, folderPath, body);
 	};
 
+	const bar = <SearchSortBar search={search} onSearch={setSearch} sort={sort} onSort={setSort} />;
+	const composer = <Composer onSubmit={addPost} atTop={composerOnTop} />;
+	const feed = (
+		<div className="microblog-feed" ref={feedRef}>
+			{visible.length === 0 ? (
+				<p className="microblog-empty">
+					{search ? "No posts match your search." : "No posts yet — write your first one."}
+				</p>
+			) : (
+				visible.map((p) => <PostCard key={p.path} post={p} onSelectTag={setSearch} />)
+			)}
+		</div>
+	);
+
 	return (
 		<div className="microblog-timeline">
-			<SearchSortBar search={search} onSearch={setSearch} sort={sort} onSort={setSort} />
-
-			<div className="microblog-feed" ref={feedRef}>
-				{visible.length === 0 ? (
-					<p className="microblog-empty">
-						{search
-							? "No posts match your search."
-							: "No posts yet — write your first one below."}
-					</p>
-				) : (
-					visible.map((p) => (
-						<PostCard key={p.path} post={p} onSelectTag={setSearch} />
-					))
-				)}
-			</div>
-
-			<Composer onSubmit={addPost} />
+			{composerOnTop ? (
+				<>
+					{composer}
+					{bar}
+					{feed}
+				</>
+			) : (
+				<>
+					{bar}
+					{feed}
+					{composer}
+				</>
+			)}
 		</div>
 	);
 }

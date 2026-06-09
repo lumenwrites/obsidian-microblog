@@ -1,6 +1,7 @@
 import { faMagnifyingGlass, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { SortOrder } from "../types";
+import { SortControl } from "./SortControl";
 
 /** Top bar: text search (with clear) + sort order (newest / top by score). */
 export function SearchSortBar({
@@ -34,10 +35,7 @@ export function SearchSortBar({
 					</button>
 				)}
 			</div>
-			<select value={sort} onChange={(e) => onSort(e.target.value as SortOrder)}>
-				<option value="chronological">Newest</option>
-				<option value="score">Top</option>
-			</select>
+			<SortControl sort={sort} onSort={onSort} />
 		</div>
 	);
 }

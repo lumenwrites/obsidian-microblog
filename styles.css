@@ -83,6 +83,18 @@
 	color: var(--text-normal);
 }
 
+.microblog-sort {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-4-1);
+	cursor: pointer;
+}
+
+.microblog-sort-caret {
+	color: var(--text-muted);
+	font-size: 0.85em;
+}
+
 /* ── Post card ────────────────────────────────────────────────────────────── */
 
 .microblog-post {
@@ -168,26 +180,10 @@
 	color: var(--text-accent-hover);
 }
 
-.microblog-post-tags {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--size-2-2);
-	margin-top: var(--size-4-2);
-}
-
-.microblog-tag {
-	padding: var(--size-2-1) var(--size-4-1);
-	color: var(--text-accent);
-	background: var(--background-modifier-hover);
-	border-radius: var(--radius-s);
-	font-size: var(--font-ui-smaller);
-	box-shadow: none;
+/* Inline #tags in the body are rendered by Obsidian (`.tag`); the cursor hints
+   they're clickable (we intercept the click to drive the search). */
+.microblog-post-body a.tag {
 	cursor: pointer;
-}
-
-.microblog-tag:hover {
-	color: var(--text-on-accent);
-	background: var(--interactive-accent);
 }
 
 /* ── Composer ─────────────────────────────────────────────────────────────── */
@@ -201,10 +197,18 @@
 	background: var(--background-primary);
 }
 
+.microblog-composer.is-top {
+	border-top: none;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
 .microblog-composer-input {
 	width: 100%;
 	resize: none;
-	font-family: inherit;
+	/* Match the vault's note text, not the smaller default control font. */
+	font-family: var(--font-text);
+	font-size: var(--font-text-size);
+	line-height: var(--line-height-normal);
 }
 
 .microblog-composer-actions {

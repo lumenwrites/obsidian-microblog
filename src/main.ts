@@ -12,6 +12,9 @@ import { TimelineView, VIEW_TYPE_MICROBLOG } from "./view";
 export default class MicroblogPlugin extends Plugin {
 	settings!: MicroblogSettings;
 
+	/** Subscribers (the React provider) notified whenever settings are saved. */
+	private settingsListeners = new Set<() => void>();
+
 	async onload() {
 		await this.loadSettings();
 
@@ -55,6 +58,13 @@ export default class MicroblogPlugin extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		this.settingsListeners.forEach((cb) => cb());
+	}
+
+	/** Subscribe to settings changes (used by the React provider to re-render). */
+	onSettingsChange(cb: () => void): () => void {
+		this.settingsListeners.add(cb);
+		return () => this.settingsListeners.delete(cb);
 	}
 
 	/** Open a timeline for `folderPath` (or the default folder) in a new tab and reveal it. */

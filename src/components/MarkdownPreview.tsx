@@ -15,9 +15,12 @@ import { useApp } from "../context/PluginContext";
 export function MarkdownPreview({
 	markdown,
 	sourcePath,
+	onTagClick,
 }: {
 	markdown: string;
 	sourcePath: string;
+	/** Intercept clicks on inline #tags (rendered by Obsidian) to drive our search. */
+	onTagClick?: (tag: string) => void;
 }) {
 	const app = useApp();
 	const ref = useRef<HTMLDivElement>(null);
@@ -31,11 +34,23 @@ export function MarkdownPreview({
 		component.load();
 		void MarkdownRenderer.render(app, markdown, el, sourcePath, component);
 
+		// Capture-phase so we run before Obsidian's own tag handler (global search).
+		const onClick = (e: MouseEvent) => {
+			const tag = (e.target as HTMLElement).closest("a.tag");
+			if (tag && onTagClick) {
+				e.preventDefault();
+				e.stopPropagation();
+				onTagClick(tag.getText());
+			}
+		};
+		el.addEventListener("click", onClick, true);
+
 		return () => {
+			el.removeEventListener("click", onClick, true);
 			component.unload();
 			el.empty();
 		};
-	}, [app, markdown, sourcePath]);
+	}, [app, markdown, sourcePath, onTagClick]);
 
 	return <div className="microblog-markdown" ref={ref} />;
 }

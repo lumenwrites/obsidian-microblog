@@ -3,14 +3,22 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { KeyboardEvent, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { useSettings } from "../context/PluginContext";
+import { cn } from "../lib/utils";
 import { CharCountRing } from "./CharCountRing";
 
 /**
- * The bottom composer: an auto-growing textarea, a circular char-count indicator,
- * and the NOTE button. Cmd/Ctrl+Enter submits. (Editing existing posts happens in
- * Obsidian's real editor via the post's Edit action — see PostCard.)
+ * The composer: an auto-growing textarea, a circular char-count indicator, and the
+ * NOTE button. Cmd/Ctrl+Enter submits. `atTop` flips its divider when it sits above
+ * the feed instead of below. (Editing existing posts happens in Obsidian's real
+ * editor via the post's Edit action — see PostCard.)
  */
-export function Composer({ onSubmit }: { onSubmit: (body: string) => Promise<void> }) {
+export function Composer({
+	onSubmit,
+	atTop = false,
+}: {
+	onSubmit: (body: string) => Promise<void>;
+	atTop?: boolean;
+}) {
 	const settings = useSettings();
 	const [value, setValue] = useState("");
 	const [busy, setBusy] = useState(false);
@@ -35,7 +43,7 @@ export function Composer({ onSubmit }: { onSubmit: (body: string) => Promise<voi
 	};
 
 	return (
-		<div className="microblog-composer">
+		<div className={cn("microblog-composer", atTop && "is-top")}>
 			<TextareaAutosize
 				className="microblog-composer-input"
 				placeholder="Write something funny…"

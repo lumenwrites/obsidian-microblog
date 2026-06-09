@@ -40,8 +40,8 @@ Because `setState` can fire before `onOpen()` creates the root, `renderApp()` gu
 
 - `MicroblogSettings` + `DEFAULT_SETTINGS` live in `src/settings.ts`.
 - Loaded in `onload()` via `Object.assign({}, DEFAULT_SETTINGS, await loadData())` (merge so new keys get defaults); saved via `saveData(settings)`.
-- The settings object lives on `plugin.settings` and is read in React through `useSettings()`. (Settings changes don't yet trigger a React re-render — when that's needed, back `useSettings` with a subscription/version bump.)
-- `MicroblogSettingTab` renders the settings UI with Obsidian's `Setting` builder.
+- The settings object lives on `plugin.settings` and is read in React through `useSettings()`. **Settings are reactive:** `saveSettings()` notifies subscribers (`plugin.onSettingsChange`), and `PluginProvider` subscribes and bumps state, so open views re-render live when a setting changes (e.g. toggling *Composer at top*).
+- `MicroblogSettingTab` renders the settings UI with Obsidian's `Setting` builder. Current settings: `defaultFolder`, `charLimit` (read-more fold), `composerOnTop` (composer above the bar + newest/top-first ordering).
 
 ## Data flow (the timeline)
 
@@ -59,7 +59,7 @@ Posts are plain notes; the plugin owns no database. The flow is one-directional 
 
 ## Markdown rendering
 
-`components/MarkdownPreview.tsx` renders a body via `MarkdownRenderer.render(app, md, el, sourcePath, component)` in an effect. Correctness: a per-render child `Component` is `load()`ed and `unload()`ed on cleanup (so embeds/post-processors unregister), `sourcePath` is the post's own path (so relative links/embeds/`[[wikilinks]]` resolve), and the container is `empty()`d before each render. This is the *output* side; the composer's *input* is a plain textarea (no live-preview editor — only undocumented internal APIs exist for that, and we don't need them since Edit opens the real note).
+`components/MarkdownPreview.tsx` renders a body via `MarkdownRenderer.render(app, md, el, sourcePath, component)` in an effect. Correctness: a per-render child `Component` is `load()`ed and `unload()`ed on cleanup (so embeds/post-processors unregister), `sourcePath` is the post's own path (so relative links/embeds/`[[wikilinks]]` resolve), and the container is `empty()`d before each render. Tags render once — inline, by Obsidian — and a capture-phase click listener on `a.tag` intercepts them (before Obsidian's global-search handler) to drive *our* search instead. This is the *output* side; the composer's *input* is a plain textarea (no live-preview editor — only undocumented internal APIs exist for that, and we don't need them since Edit opens the real note).
 
 ## Icons — two systems, one rule
 
@@ -106,13 +106,15 @@ src/
     usePosts.ts        reads the folder + subscribes to vault/metadataCache events → React state
   components/
     Timeline.tsx       the screen: search/sort bar → feed → composer; filter/sort/scroll
-    SearchSortBar.tsx  text search (+ clear) and sort order
-    PostCard.tsx       one post: header/actions, folded markdown body, clickable tags
+    SearchSortBar.tsx  text search (+ clear) and sort control
+    SortControl.tsx    dropdown trigger → Obsidian Menu with icon'd sort options
+    PostCard.tsx       one post: header/actions, folded markdown body
     Composer.tsx       textarea + char-count ring + NOTE button
     CharCountRing.tsx  circular char-count indicator
-    MarkdownPreview.tsx renders a post body via MarkdownRenderer.render
+    MarkdownPreview.tsx renders a post body via MarkdownRenderer.render; intercepts #tag clicks
   lib/
     posts.ts           data layer: file ↔ Post CRUD over vault/metadataCache/fileManager
+    confirm.ts         promise-based confirmation Modal (used by delete)
     utils.ts           cn() (clsx), formatPostDate()
   types/
     index.ts           Post, SortOrder
