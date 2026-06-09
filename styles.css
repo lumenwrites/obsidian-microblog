@@ -12,48 +12,254 @@
 .microblog-root {
 	height: 100%;
 	overflow: hidden;
+	font-size: var(--font-text-size);
+	color: var(--text-normal);
 }
 
-.microblog-app {
+/* ── Layout: toolbar (top) → feed (scrolls) → composer (bottom) ───────────── */
+
+.microblog-timeline {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
-	padding: var(--size-4-4);
-	gap: var(--size-4-4);
-	color: var(--text-normal);
-	font-size: var(--font-text-size);
 }
 
-.microblog-header {
+.microblog-feed {
+	flex: 1;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-3);
+	padding: var(--size-4-4);
+}
+
+.microblog-empty {
+	margin: auto;
+	color: var(--text-muted);
+	text-align: center;
+}
+
+/* ── Toolbar: search + sort ───────────────────────────────────────────────── */
+
+.microblog-toolbar {
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-2);
+	padding: var(--size-4-3) var(--size-4-4);
+	border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.microblog-header h2 {
-	margin: 0;
-	font-size: var(--h2-size);
+.microblog-search {
+	position: relative;
+	display: flex;
+	align-items: center;
+	flex: 1;
 }
 
-.microblog-header-icon {
-	color: var(--interactive-accent);
-	font-size: 1.2em;
+.microblog-search-icon {
+	position: absolute;
+	left: var(--size-4-2);
+	color: var(--text-muted);
+	pointer-events: none;
 }
 
-.microblog-panel {
-	padding: var(--size-4-4);
+.microblog-search input {
+	width: 100%;
+	padding-left: calc(var(--size-4-2) * 2 + 1em);
+	padding-right: calc(var(--size-4-2) * 2 + 1em);
+}
+
+.microblog-search-clear {
+	position: absolute;
+	right: var(--size-4-1);
+	padding: var(--size-4-1);
+	color: var(--text-muted);
+	background: transparent;
+	box-shadow: none;
+	cursor: pointer;
+}
+
+.microblog-search-clear:hover {
+	color: var(--text-normal);
+}
+
+/* ── Post card ────────────────────────────────────────────────────────────── */
+
+.microblog-post {
+	padding: var(--size-4-3);
 	background: var(--background-secondary);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
 }
 
-.microblog-panel p {
-	margin-top: 0;
+.microblog-post-header {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	margin-bottom: var(--size-4-1);
+	font-size: var(--font-ui-smaller);
 	color: var(--text-muted);
 }
 
-.microblog-facts {
-	margin: 0;
-	padding-left: var(--size-4-4);
-	line-height: var(--line-height-normal);
+.microblog-post-date {
+	flex: 1;
+}
+
+.microblog-post-score {
+	font-weight: var(--font-semibold);
+	color: var(--text-normal);
+	font-variant-numeric: tabular-nums;
+}
+
+.microblog-post-actions {
+	display: flex;
+	gap: var(--size-2-1);
+	opacity: 0;
+	transition: opacity 120ms ease;
+}
+
+.microblog-post:hover .microblog-post-actions,
+.microblog-post:focus-within .microblog-post-actions {
+	opacity: 1;
+}
+
+.microblog-post-actions button {
+	padding: var(--size-4-1) var(--size-4-2);
+	color: var(--text-muted);
+	background: transparent;
+	box-shadow: none;
+	cursor: pointer;
+}
+
+.microblog-post-actions button:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+/* Rendered markdown body. Tighten the default note margins inside a card. */
+.microblog-post-body :first-child {
+	margin-top: 0;
+}
+
+.microblog-post-body :last-child {
+	margin-bottom: 0;
+}
+
+/* Read-more fold: clip to a few lines with a fade. */
+.microblog-post-body.is-collapsed {
+	position: relative;
+	max-height: 9em;
+	overflow: hidden;
+	-webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+	mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+.microblog-readmore {
+	margin-top: var(--size-4-1);
+	padding: 0;
+	color: var(--text-accent);
+	background: transparent;
+	box-shadow: none;
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+}
+
+.microblog-readmore:hover {
+	color: var(--text-accent-hover);
+}
+
+.microblog-post-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-2-2);
+	margin-top: var(--size-4-2);
+}
+
+.microblog-tag {
+	padding: var(--size-2-1) var(--size-4-1);
+	color: var(--text-accent);
+	background: var(--background-modifier-hover);
+	border-radius: var(--radius-s);
+	font-size: var(--font-ui-smaller);
+	box-shadow: none;
+	cursor: pointer;
+}
+
+.microblog-tag:hover {
+	color: var(--text-on-accent);
+	background: var(--interactive-accent);
+}
+
+/* ── Composer ─────────────────────────────────────────────────────────────── */
+
+.microblog-composer {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+	padding: var(--size-4-3) var(--size-4-4);
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+}
+
+.microblog-composer-input {
+	width: 100%;
+	resize: none;
+	font-family: inherit;
+}
+
+.microblog-composer-actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: var(--size-4-3);
+}
+
+.microblog-note-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-4-1);
+	font-weight: var(--font-semibold);
+	letter-spacing: 0.04em;
+	color: var(--text-on-accent);
+	background: var(--interactive-accent);
+	cursor: pointer;
+}
+
+.microblog-note-btn:hover:not(:disabled) {
+	background: var(--interactive-accent-hover);
+}
+
+.microblog-note-btn:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+/* ── Char-count ring ──────────────────────────────────────────────────────── */
+
+.microblog-charcount {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--interactive-accent);
+}
+
+.microblog-charcount.is-over {
+	color: var(--text-error);
+}
+
+.microblog-charcount-track {
+	stroke: var(--background-modifier-border);
+}
+
+.microblog-charcount-progress {
+	stroke: currentColor;
+	transition: stroke-dashoffset 120ms ease;
+}
+
+.microblog-charcount-label {
+	position: absolute;
+	font-size: 9px;
+	font-variant-numeric: tabular-nums;
+	color: var(--text-error);
 }

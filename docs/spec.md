@@ -56,7 +56,7 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
   - Share button — on click, cross-posts to Bluesky/Mastodon
 
 **Editor (bottom)**
-- Text input for writing new posts (markdown). Ideally, if we can figure it out, rendered the way obsidian notes are rendered (with all the markdown preview and styles, basically like a regular note).
+- Auto-growing textarea for writing new posts in markdown (Cmd/Ctrl+Enter submits). The composer is a plain textarea, not a live-preview editor — but **posts in the timeline render the way Obsidian renders notes** (via `MarkdownRenderer`), and the per-post **Edit** action opens the real note in Obsidian's own editor for full editing.
 - Circular progress bar indicator showing character count relative to 300 char limit. You can write longer than 300 chars — it just affects the "read more" threshold in the timeline.
 - "NOTE" button to add the post to the timeline.
 

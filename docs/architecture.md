@@ -43,6 +43,24 @@ Because `setState` can fire before `onOpen()` creates the root, `renderApp()` gu
 - The settings object lives on `plugin.settings` and is read in React through `useSettings()`. (Settings changes don't yet trigger a React re-render — when that's needed, back `useSettings` with a subscription/version bump.)
 - `MicroblogSettingTab` renders the settings UI with Obsidian's `Setting` builder.
 
+## Data flow (the timeline)
+
+Posts are plain notes; the plugin owns no database. The flow is one-directional with disk as the source of truth:
+
+1. **`lib/posts.ts`** is the only place that touches the vault. It maps a file ↔ `Post` and does all CRUD, **scoped to the view's folder**:
+   - read: `listPostFiles` (folder children, `.md` only) → `loadPost` reads frontmatter/tags from `metadataCache` and the body from `vault.cachedRead` (frontmatter stripped via the cached `frontmatterPosition`).
+   - create: `createPost` makes the folder if needed and writes a timestamp-named file (`2026-06-09T143203.md`, collisions get a `-N` suffix) with `score: 0` frontmatter.
+   - score: `adjustScore` via `fileManager.processFrontMatter` (atomic).
+   - delete: `deletePost` via `fileManager.trashFile` (respects the user's trash setting).
+   - edit: `openPost` opens the real note in a tab — editing happens in Obsidian's own editor, not in the plugin.
+2. **`hooks/usePosts.ts`** loads the folder into React state and subscribes (inside `workspace.onLayoutReady`, removed via `offref` on unmount) to `vault` `create`/`delete`/`rename` + `metadataCache` `changed`, all filtered to the folder. Any change → reload. So hand-edits, deletes, and the plugin's own writes all converge through the same path: **write to disk → event fires → reload → re-render.** The UI never optimistically mutates local state.
+3. **`Timeline.tsx`** filters (search over body + tags) and sorts (newest / top-by-score) in a `useMemo`, renders `PostCard`s bottom-anchored (newest just above the composer, auto-scroll to bottom), and calls `createPost` from the composer.
+4. **`MarkdownPreview`** renders each post body the way Obsidian renders notes (see below).
+
+## Markdown rendering
+
+`components/MarkdownPreview.tsx` renders a body via `MarkdownRenderer.render(app, md, el, sourcePath, component)` in an effect. Correctness: a per-render child `Component` is `load()`ed and `unload()`ed on cleanup (so embeds/post-processors unregister), `sourcePath` is the post's own path (so relative links/embeds/`[[wikilinks]]` resolve), and the container is `empty()`d before each render. This is the *output* side; the composer's *input* is a plain textarea (no live-preview editor — only undocumented internal APIs exist for that, and we don't need them since Edit opens the real note).
+
 ## Icons — two systems, one rule
 
 - **Inside the React tree:** FontAwesome (`@fortawesome/react-fontawesome` + the svg-core/solid/regular/brands packs). Import icons explicitly (e.g. `faComments`) so the bundle tree-shakes.
@@ -81,17 +99,27 @@ src/
   main.ts              MicroblogPlugin: settings, view registration, ribbon, command, folder menu
   settings.ts          MicroblogSettings + DEFAULT_SETTINGS + MicroblogSettingTab
   view.tsx             TimelineView (ItemView): mounts/unmounts the React root, holds folderPath
-  app.tsx              <App> — the SPA root (smoke screen for now)
+  app.tsx              <App> — the SPA root (renders <Timeline />)
   context/
     PluginContext.tsx  PluginProvider + useApp/usePlugin/useSettings/useFolderPath
+  hooks/
+    usePosts.ts        reads the folder + subscribes to vault/metadataCache events → React state
+  components/
+    Timeline.tsx       the screen: search/sort bar → feed → composer; filter/sort/scroll
+    SearchSortBar.tsx  text search (+ clear) and sort order
+    PostCard.tsx       one post: header/actions, folded markdown body, clickable tags
+    Composer.tsx       textarea + char-count ring + NOTE button
+    CharCountRing.tsx  circular char-count indicator
+    MarkdownPreview.tsx renders a post body via MarkdownRenderer.render
   lib/
-    utils.ts           cn() (clsx)
+    posts.ts           data layer: file ↔ Post CRUD over vault/metadataCache/fileManager
+    utils.ts           cn() (clsx), formatPostDate()
   types/
-    index.ts           Post, SortOrder (shapes for the upcoming data layer)
+    index.ts           Post, SortOrder
 ```
 
 ## What's built vs. next
 
-**Built (this scaffold):** the full integration shell end-to-end — plugin, state-bearing multi-instance view, context provider + hooks, settings + tab, FontAwesome, scoped themed CSS, build/lint pipeline. `<App>` is a smoke screen proving the chain (vault name + folder + a setting render with live theme colors).
+**Built:** the integration shell (plugin, state-bearing multi-instance view, context provider + hooks, settings + tab, scoped themed CSS, build/lint pipeline) **and the MVP timeline** — data layer, reactivity bridge, markdown rendering, and the full UI (search/sort, post cards with score/edit/delete/share, read-more fold, clickable tags, composer with char-count ring).
 
-**Next (the timeline feature, see `plan-timeline.md`):** the data layer (`lib/posts.ts`), the reactivity bridge (`hooks/usePosts.ts`), markdown rendering (`components/MarkdownPreview.tsx`), and the actual UI (search/sort bar → post list → composer).
+**Next:** cross-posting to Bluesky/Mastodon (the Share button is a placeholder Notice today) and threading/replies (`reply_to` is already in the `Post` type). See `spec.md` for both.

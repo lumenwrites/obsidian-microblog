@@ -27,14 +27,16 @@ Source of truth for behavior is `spec.md`. The scaffold (plugin/view/context/set
 
 ## TODO
 
-- [ ] `src/lib/posts.ts` — file ↔ `Post` CRUD over vault/metadataCache/fileManager, scoped to `folderPath`; filename timestamp helpers.
-- [ ] `src/hooks/usePosts.ts` — read folder + subscribe to vault/metadataCache events (inside `onLayoutReady`) → React state.
-- [ ] `src/components/MarkdownPreview.tsx` — render body via `MarkdownRenderer.render` with the three correctness details above.
-- [ ] Timeline UI: search/sort bar, post list (read-more fold, edit/delete/upvote/downvote/share), composer (textarea + circular char count + NOTE).
-- [ ] Wire `<App>` to the above; remove the smoke screen.
-- [ ] Verify: posts read/create/edit/delete/score live-update across tabs; theme colors correct; `npm run build` + `npm run lint` clean.
-- [ ] Update `spec.md` (Implemented) + `architecture.md` (data flow) to match what shipped; delete this plan.
+- [ ] **Verify in Obsidian** (needs the user): open a folder as a timeline; create a post; confirm it appears; upvote/downvote updates the score; hand-edit a file and watch it live-update; delete moves to trash; Edit opens the real note; clicking a tag filters; read-more fold works; theme colors look right; multiple folders open in separate tabs independently.
+- [ ] Once verified, **delete this plan** (spec + architecture already reflect it).
 
 ## DONE
 
-(nothing yet — scaffold is in `architecture.md`)
+- [x] `src/lib/posts.ts` — file ↔ `Post` CRUD over vault/metadataCache/fileManager, scoped to `folderPath`; timestamp helpers.
+- [x] `src/hooks/usePosts.ts` — read folder + subscribe to vault/metadataCache events (inside `onLayoutReady`, `offref` on cleanup) → React state.
+- [x] `src/components/MarkdownPreview.tsx` — render body via `MarkdownRenderer.render` with the three correctness details.
+- [x] Timeline UI: `SearchSortBar`, `PostCard` (read-more fold, upvote/downvote/share/edit/delete, clickable tags), `Composer` (textarea + `CharCountRing` + NOTE), `Timeline` (filter/sort/auto-scroll).
+- [x] Wired `<App>` to `<Timeline>`; smoke screen removed.
+- [x] `npm run build` + `npm run lint` clean.
+- [x] `spec.md` (editor note) + `architecture.md` (data flow, markdown rendering, file map) updated to match what shipped.
+- [x] Share button is a placeholder `Notice` (cross-posting is a separate future plan).
