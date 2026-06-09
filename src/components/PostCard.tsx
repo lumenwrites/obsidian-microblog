@@ -2,17 +2,19 @@ import {
 	faArrowDown,
 	faArrowUp,
 	faBoxArchive,
+	faCheck,
 	faEllipsis,
 	faPenToSquare,
 	faReply,
 	faShareNodes,
+	faSquare,
 	faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Notice } from "obsidian";
 import { useEffect, useRef, useState } from "react";
 import { useApp, useSettings } from "../context/PluginContext";
-import { adjustScore, archivePost, deletePost, openPost } from "../lib/posts";
+import { adjustScore, archivePost, deletePost, openPost, setDone } from "../lib/posts";
 import { cn, formatPostDate } from "../lib/utils";
 import type { Post } from "../types";
 import { MarkdownPreview } from "./MarkdownPreview";
@@ -55,6 +57,11 @@ export function PostCard({
 	const archive = async () => {
 		await archivePost(app, post.file);
 		new Notice("Moved to archived.");
+	};
+
+	const done = post.done != null;
+	const toggleDone = async () => {
+		await setDone(app, post.file, !done);
 	};
 
 	// The ⋯ button opens a small custom dropdown anchored to its bottom-right,
@@ -111,6 +118,11 @@ export function PostCard({
 			)}
 
 			<footer className="microblog-post-footer">
+				{done && (
+					<span className="microblog-post-done" title="Done">
+						<FontAwesomeIcon icon={faCheck} />
+					</span>
+				)}
 				<span className="microblog-post-date">{formatPostDate(post.created)}</span>
 				<span className="microblog-post-score">{post.score}</span>
 				<div className="microblog-post-actions">
@@ -134,6 +146,10 @@ export function PostCard({
 						</button>
 						{menuOpen && (
 							<div className="microblog-post-menu-dropdown" role="menu">
+								<button role="menuitem" onClick={() => runAction(() => void toggleDone())}>
+									<FontAwesomeIcon icon={done ? faCheck : faSquare} />
+									<span>Done</span>
+								</button>
 								<button role="menuitem" onClick={() => runAction(onReply)}>
 									<FontAwesomeIcon icon={faReply} />
 									<span>Reply</span>

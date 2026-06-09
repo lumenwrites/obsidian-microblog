@@ -11,6 +11,8 @@ export interface Post {
 	id: string;
 	/** Creation time, parsed from the filename timestamp (e.g. 2026-06-09T143203.md). */
 	created: number;
+	/** Last-modified time (file mtime). Used by the Resurface sort. */
+	modified: number;
 	/** Markdown body, without frontmatter. */
 	body: string;
 	/** Reddit-style manual rank (frontmatter `score`). */
@@ -19,8 +21,14 @@ export interface Post {
 	shared?: string;
 	/** Future threading (frontmatter `reply_to`). */
 	replyTo?: string;
+	/** ISO timestamp set when marked done (frontmatter `done`); absent = not done. */
+	done?: string;
 	/** Hashtags, from Obsidian's MetadataCache. */
 	tags: string[];
 }
 
-export type SortOrder = "chronological" | "score";
+/** Newest = chronological, Top = by score, Resurface = review-priority (stale × score). */
+export type SortOrder = "chronological" | "score" | "resurface";
+
+/** Timeline filter by completion state. */
+export type DoneFilter = "all" | "done" | "notdone";

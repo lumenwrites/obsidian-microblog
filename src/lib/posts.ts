@@ -58,16 +58,20 @@ export async function loadPost(app: App, file: TFile): Promise<Post> {
 	const score = typeof fm.score === "number" ? fm.score : 0;
 	const shared = typeof fm.shared === "string" ? fm.shared : undefined;
 	const replyTo = typeof fm.reply_to === "string" ? fm.reply_to : undefined;
+	// `done` may come back as a string or a parsed date depending on YAML; coerce to string.
+	const done = fm.done != null ? String(fm.done) : undefined;
 
 	return {
 		file,
 		path: file.path,
 		id: file.basename,
 		created: parseTimestamp(file.basename) ?? file.stat.ctime,
+		modified: file.stat.mtime,
 		body: stripFrontmatter(content, cache?.frontmatterPosition?.end.offset),
 		score,
 		shared,
 		replyTo,
+		done,
 		tags: cache ? (getAllTags(cache) ?? []) : [],
 	};
 }
@@ -111,6 +115,14 @@ export async function adjustScore(app: App, file: TFile, delta: number): Promise
 	await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
 		const current = typeof fm.score === "number" ? fm.score : 0;
 		fm.score = current + delta;
+	});
+}
+
+/** Mark a post done (stamps `done` with the current time) or not done (removes it). */
+export async function setDone(app: App, file: TFile, done: boolean): Promise<void> {
+	await app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+		if (done) fm.done = new Date().toISOString();
+		else delete fm.done;
 	});
 }
 

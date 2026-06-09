@@ -50,11 +50,11 @@ Posts are plain notes; the plugin owns no database. The flow is one-directional 
 1. **`lib/posts.ts`** is the only place that touches the vault. It maps a file ↔ `Post` and does all CRUD, **scoped to the view's folder**:
    - read: `listPostFiles` (folder children, `.md` only) → `loadPost` reads frontmatter/tags from `metadataCache` and the body from `vault.cachedRead` (frontmatter stripped via the cached `frontmatterPosition`).
    - create: `createPost` makes the folder if needed and writes a timestamp-named file (`2026-06-09T143203.md`, collisions get a `-N` suffix) with `score: 0` frontmatter, plus a quoted `reply_to` when it's a reply.
-   - score: `adjustScore` via `fileManager.processFrontMatter` (atomic).
+   - score: `adjustScore` via `fileManager.processFrontMatter` (atomic). `setDone` likewise toggles a `done` ISO timestamp in frontmatter.
    - archive / delete: `archivePost` and `deletePost` both `renameFile` the note into a subfolder beside it — `archived/` or `trash/` respectively (shared `moveToSubfolder` helper, folder created on demand). Since `listPostFiles` reads only *direct* children, these posts drop out of the timeline (and stats) but stay in the vault — reversible by moving them back, and each subfolder can be opened as its own timeline.
    - edit: `openPost` opens the real note in a tab — editing happens in Obsidian's own editor, not in the plugin.
 2. **`hooks/usePosts.ts`** loads the folder into React state and subscribes (inside `workspace.onLayoutReady`, removed via `offref` on unmount) to `vault` `create`/`delete`/`rename` + `metadataCache` `changed`, all filtered to the folder. Any change → reload. So hand-edits, deletes, and the plugin's own writes all converge through the same path: **write to disk → event fires → reload → re-render.** The UI never optimistically mutates local state.
-3. **`Timeline.tsx`** turns the flat post list into display `rows` in a `useMemo`. With no search it builds the **reply tree** (`reply_to` → parent via each post's `id` = filename stem), sorts roots by the current order, sorts replies oldest→newest, and DFS-flattens to `{ post, depth }[]`; an active search instead flattens to the matching posts. It renders `PostCard`s bottom-anchored (auto-scroll to the composer edge), tracks the `replyTarget`, and calls `createPost(folder, body, replyTarget?.id)`.
+3. **`Timeline.tsx`** turns the flat post list into display `rows` in a `useMemo`. Posts are first filtered by the done filter (All / Not done / Done). With no search it builds the **reply tree** (`reply_to` → parent via each post's `id` = filename stem), sorts roots by the current order — Newest (created), Top (score), or Resurface (`(score + 1) × days-since-modified`, so stale high-scored posts float up and just-touched ones sink) — sorts replies oldest→newest, and DFS-flattens to `{ post, depth }[]`; an active search instead flattens to the matching posts. It renders `PostCard`s bottom-anchored (auto-scroll to the composer edge), tracks the `replyTarget`, and calls `createPost(folder, body, replyTarget?.id)`.
 4. **`MarkdownPreview`** renders each post body the way Obsidian renders notes (see below).
 
 ### Threads / replies
@@ -132,8 +132,9 @@ src/
     usePosts.ts        reads the folder + subscribes to vault/metadataCache events → React state
   components/
     Timeline.tsx       the screen: search/sort bar → feed → composer; filter/sort/scroll
-    SearchSortBar.tsx  text search (+ clear) and sort control
-    SortControl.tsx    dropdown trigger → Obsidian Menu with icon'd sort options
+    SearchSortBar.tsx  text search (+ clear) + sort control + done filter
+    SortControl.tsx    dropdown → Obsidian Menu: Newest / Top / Resurface
+    FilterControl.tsx  dropdown → Obsidian Menu: All / Not done / Done
     PostCard.tsx       one post: folded markdown body + bottom-right footer (date/score/vote/edit + ⋯ menu)
     Composer.tsx       textarea + char-count ring + NOTE button
     CharCountRing.tsx  circular char-count indicator

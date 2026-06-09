@@ -1,19 +1,24 @@
 import { faMagnifyingGlass, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import type { SortOrder } from "../types";
+import type { DoneFilter, SortOrder } from "../types";
+import { FilterControl } from "./FilterControl";
 import { SortControl } from "./SortControl";
 
-/** Top bar: text search (with clear) + sort order (newest / top by score). */
+/** Top bar: text search (with clear) + sort order + done filter. */
 export function SearchSortBar({
 	search,
 	onSearch,
 	sort,
 	onSort,
+	filter,
+	onFilter,
 }: {
 	search: string;
 	onSearch: (value: string) => void;
 	sort: SortOrder;
 	onSort: (value: SortOrder) => void;
+	filter: DoneFilter;
+	onFilter: (value: DoneFilter) => void;
 }) {
 	return (
 		<div className="microblog-toolbar">
@@ -36,6 +41,7 @@ export function SearchSortBar({
 				)}
 			</div>
 			<SortControl sort={sort} onSort={onSort} />
+			<FilterControl filter={filter} onFilter={onFilter} />
 		</div>
 	);
 }

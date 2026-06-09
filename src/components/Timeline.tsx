@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useApp, useFolderPath, useSettings } from "../context/PluginContext";
 import { usePosts } from "../hooks/usePosts";
 import { createPost } from "../lib/posts";
-import type { Post, SortOrder } from "../types";
+import type { DoneFilter, Post, SortOrder } from "../types";
 import { Composer } from "./Composer";
 import { PostCard } from "./PostCard";
 import { SearchSortBar } from "./SearchSortBar";
@@ -32,6 +32,7 @@ export function Timeline() {
 
 	const [search, setSearch] = useState("");
 	const [sort, setSort] = useState<SortOrder>("chronological");
+	const [filter, setFilter] = useState<DoneFilter>("all");
 	const [replyTarget, setReplyTarget] = useState<Post | null>(null);
 	const feedRef = useRef<HTMLDivElement>(null);
 
@@ -41,26 +42,41 @@ export function Timeline() {
 	const dir = composerOnTop ? -1 : 1;
 
 	const rows = useMemo<Row[]>(() => {
-		const compareRoots = (a: Post, b: Post) =>
-			dir *
-			(sort === "score" ? a.score - b.score || a.created - b.created : a.created - b.created);
+		// Resurface review-priority: stale, high-scored posts rise; just-touched ones
+		// (any edit/upvote/done bumps mtime) sink and slowly climb back. (score + 1) so
+		// score-0 posts still resurface by age; downvoted posts sink below them.
+		const now = Date.now();
+		const resurfacePriority = (p: Post) =>
+			(p.score + 1) * Math.max(0, (now - p.modified) / 86_400_000);
+
+		const compareRoots = (a: Post, b: Post) => {
+			if (sort === "resurface") return dir * (resurfacePriority(a) - resurfacePriority(b));
+			if (sort === "score") return dir * (a.score - b.score || a.created - b.created);
+			return dir * (a.created - b.created);
+		};
+
+		// Filter by done state first.
+		const pool =
+			filter === "all"
+				? posts
+				: posts.filter((p) => (filter === "done" ? p.done != null : p.done == null));
 
 		// Search: a flat list of matching posts (replies included).
 		if (query) {
 			const matches = (p: Post) =>
 				p.body.toLowerCase().includes(query) ||
 				p.tags.some((t) => t.toLowerCase().includes(query));
-			return posts
+			return pool
 				.filter(matches)
 				.sort(compareRoots)
 				.map((post) => ({ post, depth: 0 }));
 		}
 
 		// Threaded: parent → children, plus the roots (top-level or orphaned replies).
-		const byId = new Map(posts.map((p) => [p.id, p]));
+		const byId = new Map(pool.map((p) => [p.id, p]));
 		const childrenOf = new Map<string, Post[]>();
 		const roots: Post[] = [];
-		for (const p of posts) {
+		for (const p of pool) {
 			if (p.replyTo && byId.has(p.replyTo)) {
 				const siblings = childrenOf.get(p.replyTo);
 				if (siblings) siblings.push(p);
@@ -82,7 +98,7 @@ export function Timeline() {
 		};
 		roots.forEach((root) => walk(root, 0));
 		return out;
-	}, [posts, query, sort, dir]);
+	}, [posts, query, sort, dir, filter]);
 
 	// Anchor the feed to the composer's edge whenever the visible set changes.
 	useEffect(() => {
@@ -95,7 +111,16 @@ export function Timeline() {
 		setReplyTarget(null);
 	};
 
-	const bar = <SearchSortBar search={search} onSearch={setSearch} sort={sort} onSort={setSort} />;
+	const bar = (
+		<SearchSortBar
+			search={search}
+			onSearch={setSearch}
+			sort={sort}
+			onSort={setSort}
+			filter={filter}
+			onFilter={setFilter}
+		/>
+	);
 	const composer = (
 		<Composer
 			onSubmit={addPost}
@@ -109,7 +134,13 @@ export function Timeline() {
 		<div className="microblog-feed" ref={feedRef}>
 			{rows.length === 0 ? (
 				<p className="microblog-empty">
-					{query ? "No posts match your search." : "No posts yet — write your first one."}
+					{query
+							? "No posts match your search."
+							: filter === "done"
+								? "No posts marked done yet."
+								: filter === "notdone"
+									? "Nothing here — all caught up!"
+									: "No posts yet — write your first one."}
 				</p>
 			) : (
 				rows.map(({ post, depth }) => (

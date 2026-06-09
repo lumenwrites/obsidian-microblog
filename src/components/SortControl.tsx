@@ -1,5 +1,5 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faClock, faTrophy } from "@fortawesome/free-solid-svg-icons";
+import { faArrowsRotate, faCaretDown, faClock, faTrophy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Menu } from "obsidian";
 import type { MouseEvent } from "react";
@@ -9,9 +9,10 @@ import type { SortOrder } from "../types";
 const OPTIONS: Record<SortOrder, { label: string; icon: IconDefinition; menuIcon: string }> = {
 	chronological: { label: "Newest", icon: faClock, menuIcon: "clock" },
 	score: { label: "Top", icon: faTrophy, menuIcon: "trophy" },
+	resurface: { label: "Resurface", icon: faArrowsRotate, menuIcon: "refresh-cw" },
 };
 
-const ORDER: SortOrder[] = ["chronological", "score"];
+const ORDER: SortOrder[] = ["chronological", "score", "resurface"];
 
 /** A dropdown trigger that opens an Obsidian Menu with icon'd, checkable options. */
 export function SortControl({

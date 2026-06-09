@@ -24,6 +24,8 @@ Frontmatter fields:
 
 - `shared` — id of the post when it was cross-posted to social networks
 - `score` — numeric, like reddit upvotes, user can modify manually to rank favorite posts
+- `reply_to` — id (filename stem) of the parent post, for threads
+- `done` — ISO timestamp set when the post is marked done (absent = not done)
 - Can contain more fields in the future as needed
 
 Every post is a normal Obsidian note — visible in the file explorer, searchable via Obsidian's global search, editable by hand in the normal editor. Tags (hashtags in post body) are indexed by Obsidian's MetadataCache automatically. The timeline UI collects tags only from files in its folder, not from the entire vault.
@@ -43,7 +45,8 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
 **Search & Sort Bar (top)**
 - Search input. Typing text filters posts to those containing the text. X button clears the search.
 - Clicking a hashtag in any post populates the search bar with that hashtag and filters automatically.
-- Sorting dropdown: chronological order or by score.
+- Sorting dropdown: Newest (chronological), Top (by score), or **Resurface** — a review-priority order that floats up stale, high-scored posts (so good old material periodically resurfaces); interacting with a post (edit/upvote/done) bumps its modified time and sends it back down to climb again.
+- Filter dropdown: **All / Not done / Done** — filters by the `done` frontmatter flag.
 
 **Timeline (middle)**
 - Displays posts in chronological order, newest posts at the bottom.
@@ -52,7 +55,7 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
 - Each post has:
   - Upvote / downvote buttons (modify the post's score)
   - Edit button — opens the real note in Obsidian's editor
-  - A ⋯ menu with: Reply (starts a reply, forming a thread — see Threads below); Share (cross-post to Bluesky/Mastodon — planned; placeholder for now); Archive (moves the note into an `archived/` subfolder of the timeline folder); Delete (moves the note into a `trash/` subfolder, beside `archived/`). Both leave the timeline and stats but stay in the vault — reversible (move them back), and either subfolder can itself be opened as a timeline. Delete has no confirmation.
+  - A ⋯ menu with: Done (toggles a `done: <timestamp>` frontmatter flag; the menu icon is a square that becomes a check, and done posts show a check in their footer); Reply (starts a reply, forming a thread — see Threads below); Share (cross-post to Bluesky/Mastodon — planned; placeholder for now); Archive (moves the note into an `archived/` subfolder of the timeline folder); Delete (moves the note into a `trash/` subfolder, beside `archived/`). Both leave the timeline and stats but stay in the vault — reversible (move them back), and either subfolder can itself be opened as a timeline. Delete has no confirmation.
 
 **Threads / Replies**
 - Any post can reply to another (stored as a quoted `reply_to: "<parent-id>"` in frontmatter, where the id is the parent's filename stem). Replies nest under their parent in the timeline, indented with a thread line (indentation caps at depth 5 so deep chains stay readable). Enables play-by-post roleplaying threads (replying to your own posts).
