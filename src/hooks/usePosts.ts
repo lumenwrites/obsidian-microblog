@@ -24,14 +24,19 @@ export function usePosts(folderPath: string | undefined): Post[] {
 		}
 
 		let cancelled = false;
+		// Monotonic token so out-of-order reloads can't clobber a newer result: rapid
+		// events (e.g. create + changed) each start a reload, and they may resolve out
+		// of order — only the latest-started one is allowed to apply.
+		let generation = 0;
 		const cleanups: Array<() => void> = [];
 		const prefix = folderPath.replace(/\/+$/, "") + "/";
 		const inFolder = (file: TAbstractFile): boolean =>
 			file instanceof TFile && file.path.startsWith(prefix);
 
 		const reload = async () => {
+			const mine = ++generation;
 			const next = await loadPosts(app, folderPath);
-			if (!cancelled) setPosts(next);
+			if (!cancelled && mine === generation) setPosts(next);
 		};
 
 		app.workspace.onLayoutReady(() => {

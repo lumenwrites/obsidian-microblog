@@ -36,12 +36,20 @@ Most of this is mechanically enforced by `npm run lint` (`eslint-plugin-obsidian
 - **Use Obsidian CSS variables** for color/spacing/radius (`--text-normal`, `--background-secondary`, `--interactive-accent`, `--radius-m`, `--size-4-*`, …). Don't hardcode colors — it breaks theme support.
 - Use `cn()` from `lib/utils.ts` for conditional class names.
 
+## Error handling
+
+- **Wrap fire-and-forget vault mutations in `run()`** (`lib/utils.ts`): `onClick={() => void run(() => adjustScore(app, file, 1), "Couldn't update score")}`. It catches, `console.error`s, and shows a `Notice` — never let a failed write be swallowed by a bare `void`.
+- Where a component owns surrounding state (e.g. the composer's busy flag and text), use a local `try/catch/finally` instead, so you control what happens on failure (the composer keeps your text and resets `busy`).
+- Don't add info-level `console.log` noise — it shows up in every user's console and the Obsidian review guidelines discourage it. Log on *failure* (`console.error`), not on every step.
+
 ## React conventions
 
 - Components in `PascalCase.tsx`; one screen/feature per file, organized by feature under `src/components/`.
 - Hooks in `src/hooks/`, named `useThing.ts`; pure helpers in `src/lib/`.
 - `StrictMode` is on — effects run twice in dev. Write effects that are safe to run twice and always return a cleanup function.
 - Keep components pure; push Obsidian/vault side effects into `lib/` functions and hooks.
+- **Reuse the UI primitives.** In-view dropdowns use `Dropdown`; "pick one option" controls use `SelectControl` (see `SortControl`/`FilterControl` as presets) — don't hand-roll another popover or reach for Obsidian's `Menu` inside the React tree.
+- **Guard against out-of-order async.** When overlapping async calls can write the same state (e.g. event-driven reloads), gate the result on a generation token so a slow earlier call can't clobber a newer one (see `usePosts`).
 
 ## TypeScript
 

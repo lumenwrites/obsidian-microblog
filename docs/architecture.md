@@ -53,7 +53,7 @@ Posts are plain notes; the plugin owns no database. The flow is one-directional 
    - score: `adjustScore` via `fileManager.processFrontMatter` (atomic). `setDone` likewise toggles a `done` ISO timestamp in frontmatter.
    - archive / delete: `archivePost` and `deletePost` both `renameFile` the note into a subfolder beside it — `archived/` or `trash/` respectively (shared `moveToSubfolder` helper, folder created on demand). Since `listPostFiles` reads only *direct* children, these posts drop out of the timeline (and stats) but stay in the vault — reversible by moving them back, and each subfolder can be opened as its own timeline.
    - edit: `openPost` opens the real note in a tab — editing happens in Obsidian's own editor, not in the plugin.
-2. **`hooks/usePosts.ts`** loads the folder into React state and subscribes (inside `workspace.onLayoutReady`, removed via `offref` on unmount) to `vault` `create`/`delete`/`rename` + `metadataCache` `changed`, all filtered to the folder. Any change → reload. So hand-edits, deletes, and the plugin's own writes all converge through the same path: **write to disk → event fires → reload → re-render.** The UI never optimistically mutates local state.
+2. **`hooks/usePosts.ts`** loads the folder into React state and subscribes (inside `workspace.onLayoutReady`, removed via `offref` on unmount) to `vault` `create`/`delete`/`rename` + `metadataCache` `changed`, all filtered to the folder. Any change → reload. So hand-edits, deletes, and the plugin's own writes all converge through the same path: **write to disk → event fires → reload → re-render.** The UI never optimistically mutates local state. Reloads carry a monotonic generation token so that when rapid events fire overlapping async reloads, only the latest-started one applies — out-of-order results can't clobber newer data.
 3. **`Timeline.tsx`** turns the flat post list into display `rows` in a `useMemo`. Posts are first filtered by the done filter (All / Not done / Done). With no search it builds the **reply tree** (`reply_to` → parent via each post's `id` = filename stem), sorts roots by the current order — Newest (created), Top (score), or Resurface (`(score + 1) × days-since-modified`, so stale high-scored posts float up and just-touched ones sink) — sorts replies oldest→newest, and DFS-flattens to `{ post, depth }[]`; an active search instead flattens to the matching posts. It renders `PostCard`s bottom-anchored (auto-scroll to the composer edge), tracks the `replyTarget`, and calls `createPost(folder, body, replyTarget?.id)`.
 4. **`MarkdownPreview`** renders each post body the way Obsidian renders notes (see below).
 
@@ -131,10 +131,12 @@ src/
   hooks/
     usePosts.ts        reads the folder + subscribes to vault/metadataCache events → React state
   components/
-    Timeline.tsx       the screen: search/sort bar → feed → composer; filter/sort/scroll
+    Timeline.tsx       the screen: toolbar → feed → composer; done-filter / sort / thread / scroll
     SearchSortBar.tsx  text search (+ clear) + sort control + done filter
-    SortControl.tsx    dropdown → Obsidian Menu: Newest / Top / Resurface
-    FilterControl.tsx  dropdown → Obsidian Menu: All / Not done / Done
+    Dropdown.tsx       reusable popover (trigger + panel); outside-click / Escape to close
+    SelectControl.tsx  generic "pick one option" dropdown (shared base for sort + filter)
+    SortControl.tsx    SelectControl preset: New / Top / Resurface
+    FilterControl.tsx  SelectControl preset: All / Not done / Done
     PostCard.tsx       one post: folded markdown body + bottom-right footer (date/score/vote/edit + ⋯ menu)
     Composer.tsx       textarea + char-count ring + NOTE button
     CharCountRing.tsx  circular char-count indicator
@@ -143,13 +145,18 @@ src/
   lib/
     posts.ts           data layer: file ↔ Post CRUD over vault/metadataCache/fileManager
     stats.ts           pure stats math: one carry pass → backfilled 30-day graph + streak
-    utils.ts           cn() (clsx), formatPostDate()
+    utils.ts           cn() (clsx), formatPostDate(), run() (error-surfacing wrapper)
   types/
-    index.ts           Post, SortOrder
+    index.ts           Post, SortOrder, DoneFilter
 ```
+
+## UI building blocks & error handling
+
+- **`Dropdown`** is the one popover primitive (trigger + panel, closes on outside-click/Escape via `activeDocument`). The post ⋯ menu uses it directly; **`SelectControl`** wraps it into a generic "pick one option" control, and **`SortControl`/`FilterControl`** are thin presets over `SelectControl` (so the two toolbar dropdowns share one implementation). We use this instead of Obsidian's `Menu` for in-view controls so the look/sizing is fully ours.
+- **Vault mutations go through `run()`** (`lib/utils.ts`): a fire-and-forget action wrapper that catches failures, `console.error`s them, and shows a `Notice` — so a failed score/done/archive/delete isn't silently swallowed by `void`. The composer's submit has its own try/catch (it owns the busy/text lifecycle and keeps your text on failure).
 
 ## What's built vs. next
 
-**Built:** the integration shell (plugin, state-bearing multi-instance view, context provider + hooks, settings + tab, scoped themed CSS, build/lint pipeline) **and the MVP timeline** — data layer, reactivity bridge, markdown rendering, and the full UI (search/sort, post cards with score/edit/delete/share, read-more fold, clickable tags, composer with char-count ring).
+**Built:** the integration shell (plugin, state-bearing multi-instance view, context provider + reactive settings, settings tab, scoped themed CSS, build/lint pipeline) **and the full timeline** — data layer, reactivity bridge, markdown rendering, threads/replies, the stats/streak widget, and the UI (search, sort incl. Resurface, done filter, post cards with vote/edit/done/reply/share/archive/delete, read-more fold, clickable tags, composer with char-count ring).
 
-**Next:** cross-posting to Bluesky/Mastodon (the Share button is a placeholder Notice today) and threading/replies (`reply_to` is already in the `Post` type). See `spec.md` for both.
+**Next:** cross-posting to Bluesky/Mastodon — the Share button is a placeholder `Notice` today. See `spec.md`.

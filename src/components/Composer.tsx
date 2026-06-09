@@ -1,5 +1,6 @@
 import { faPaperPlane, faReply, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Notice } from "obsidian";
 import { useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { useSettings } from "../context/PluginContext";
@@ -40,7 +41,10 @@ export function Composer({
 		setBusy(true);
 		try {
 			await onSubmit(trimmed);
-			setValue("");
+			setValue(""); // only cleared on success — a failed post keeps your text
+		} catch (e) {
+			console.error("[microblog] Couldn't post", e);
+			new Notice("Couldn't post — see console.");
 		} finally {
 			setBusy(false);
 		}

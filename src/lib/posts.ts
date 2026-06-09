@@ -127,8 +127,8 @@ export async function setDone(app: App, file: TFile, done: boolean): Promise<voi
 }
 
 /** Subfolders (beside the post, inside the timeline folder) posts get moved into. */
-export const ARCHIVE_DIR = "archived";
-export const TRASH_DIR = "trash";
+const ARCHIVE_DIR = "archived";
+const TRASH_DIR = "trash";
 
 /**
  * Move a post into a `<subdir>/` folder next to it (created if needed). Because the

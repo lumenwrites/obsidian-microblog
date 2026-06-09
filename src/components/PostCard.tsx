@@ -1,3 +1,4 @@
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
 	faArrowDown,
 	faArrowUp,
@@ -15,7 +16,7 @@ import { Notice } from "obsidian";
 import { useState } from "react";
 import { useApp, useSettings } from "../context/PluginContext";
 import { adjustScore, archivePost, deletePost, openPost, setDone } from "../lib/posts";
-import { cn, formatPostDate } from "../lib/utils";
+import { cn, formatPostDate, run } from "../lib/utils";
 import type { Post } from "../types";
 import { Dropdown } from "./Dropdown";
 import { MarkdownPreview } from "./MarkdownPreview";
@@ -23,11 +24,22 @@ import { MarkdownPreview } from "./MarkdownPreview";
 /** How many nesting levels still add indentation before it's capped (deep threads). */
 const MAX_INDENT_DEPTH = 5;
 
+/** A row in the ⋯ overflow menu. */
+interface MenuItem {
+	icon: IconDefinition;
+	label: string;
+	onClick: () => void;
+	danger?: boolean;
+}
+
 /**
  * One post in the timeline: the rendered markdown body (folded behind "read more"
  * when longer than the soft limit) with a bottom-right footer holding the meta and
- * primary actions (date, score, vote, edit) plus a ⋯ menu for the rest (reply, share,
- * delete).
+ * primary actions (date, score, vote, edit) plus a ⋯ menu for the rest (done, reply,
+ * share, archive, delete).
+ *
+ * All vault mutations go through `run()` so a failed write surfaces a Notice instead
+ * of being silently swallowed by `void`.
  *
  * `depth` is its position in a reply thread (0 = root); it indents and draws a thread
  * line. `isReplyTarget` highlights the post currently being replied to.
@@ -49,21 +61,37 @@ export function PostCard({
 	const settings = useSettings();
 	const [expanded, setExpanded] = useState(false);
 	const foldable = post.body.length > settings.charLimit;
+	const done = post.done != null;
 
 	const share = () => {
 		// Cross-posting (Bluesky/Mastodon) is a planned feature — see spec.md.
 		new Notice("Cross-posting isn't set up yet.");
 	};
 
-	const archive = async () => {
-		await archivePost(app, post.file);
-		new Notice("Moved to archived.");
-	};
-
-	const done = post.done != null;
-	const toggleDone = async () => {
-		await setDone(app, post.file, !done);
-	};
+	const menuItems: MenuItem[] = [
+		{
+			icon: done ? faCheck : faSquare,
+			label: "Done",
+			onClick: () => void run(() => setDone(app, post.file, !done), "Couldn't update done"),
+		},
+		{ icon: faReply, label: "Reply", onClick: onReply },
+		{ icon: faShareNodes, label: "Share", onClick: share },
+		{
+			icon: faBoxArchive,
+			label: "Archive",
+			onClick: () =>
+				void run(async () => {
+					await archivePost(app, post.file);
+					new Notice("Moved to archived.");
+				}, "Couldn't archive"),
+		},
+		{
+			icon: faTrash,
+			label: "Delete",
+			danger: true,
+			onClick: () => void run(() => deletePost(app, post.file), "Couldn't delete"),
+		},
+	];
 
 	return (
 		<article
@@ -100,21 +128,21 @@ export function PostCard({
 					<button
 						className="microblog-icon-btn"
 						title="Upvote"
-						onClick={() => void adjustScore(app, post.file, 1)}
+						onClick={() => void run(() => adjustScore(app, post.file, 1), "Couldn't update score")}
 					>
 						<FontAwesomeIcon icon={faArrowUp} />
 					</button>
 					<button
 						className="microblog-icon-btn"
 						title="Downvote"
-						onClick={() => void adjustScore(app, post.file, -1)}
+						onClick={() => void run(() => adjustScore(app, post.file, -1), "Couldn't update score")}
 					>
 						<FontAwesomeIcon icon={faArrowDown} />
 					</button>
 					<button
 						className="microblog-icon-btn"
 						title="Edit in editor"
-						onClick={() => void openPost(app, post.file)}
+						onClick={() => void run(() => openPost(app, post.file), "Couldn't open note")}
 					>
 						<FontAwesomeIcon icon={faPenToSquare} />
 					</button>
@@ -132,65 +160,22 @@ export function PostCard({
 							</button>
 						)}
 					>
-						{(close) => (
-							<>
+						{(close) =>
+							menuItems.map((item) => (
 								<button
-									className="microblog-dropdown-item"
+									key={item.label}
+									className={cn("microblog-dropdown-item", item.danger && "is-danger")}
 									role="menuitem"
 									onClick={() => {
 										close();
-										void toggleDone();
+										item.onClick();
 									}}
 								>
-									<FontAwesomeIcon icon={done ? faCheck : faSquare} />
-									<span>Done</span>
+									<FontAwesomeIcon icon={item.icon} />
+									<span>{item.label}</span>
 								</button>
-								<button
-									className="microblog-dropdown-item"
-									role="menuitem"
-									onClick={() => {
-										close();
-										onReply();
-									}}
-								>
-									<FontAwesomeIcon icon={faReply} />
-									<span>Reply</span>
-								</button>
-								<button
-									className="microblog-dropdown-item"
-									role="menuitem"
-									onClick={() => {
-										close();
-										share();
-									}}
-								>
-									<FontAwesomeIcon icon={faShareNodes} />
-									<span>Share</span>
-								</button>
-								<button
-									className="microblog-dropdown-item"
-									role="menuitem"
-									onClick={() => {
-										close();
-										void archive();
-									}}
-								>
-									<FontAwesomeIcon icon={faBoxArchive} />
-									<span>Archive</span>
-								</button>
-								<button
-									className="microblog-dropdown-item is-danger"
-									role="menuitem"
-									onClick={() => {
-										close();
-										void deletePost(app, post.file);
-									}}
-								>
-									<FontAwesomeIcon icon={faTrash} />
-									<span>Delete</span>
-								</button>
-							</>
-						)}
+							))
+						}
 					</Dropdown>
 				</div>
 			</footer>
