@@ -455,7 +455,9 @@
 
 /* ── Tag input (composer, left of the char-count ring) ────────────────────── */
 
-/* Bordered box styled like the search input (a leading icon + chips + a field). */
+/* Bordered box styled like the search input (a leading icon + chips + a field).
+   The always-present field fixes the row height (--tag-row-h), and chips fit within
+   it, so the box is the same height empty or full — adding tags never grows it. */
 .microblog-taginput {
 	position: relative;
 	flex: 1;
@@ -464,11 +466,13 @@
 	flex-wrap: wrap;
 	align-items: center;
 	gap: var(--size-2-2);
-	padding: var(--size-2-2) var(--size-4-2);
+	padding: var(--size-4-1) var(--size-4-2);
+	font-size: var(--font-ui-small);
 	background: var(--background-modifier-form-field);
 	border: var(--input-border-width, 1px) solid var(--background-modifier-border);
 	border-radius: var(--input-radius, var(--radius-s));
 	cursor: text;
+	--tag-row-h: 1.5em;
 }
 
 .microblog-taginput:focus-within {
@@ -480,12 +484,14 @@
 	color: var(--text-muted);
 }
 
-/* Committed-tag chips; click to remove (the ✕ hints it). */
+/* Committed-tag chips; click to remove (the ✕ hints it). Height-driven (no vertical
+   padding) so they stay within the row height. */
 .microblog-taginput-chip {
 	display: inline-flex;
 	align-items: center;
 	gap: var(--size-2-1);
-	padding: var(--size-2-1) var(--size-4-1);
+	height: var(--tag-row-h);
+	padding: 0 var(--size-4-1);
 	border-radius: var(--radius-s);
 	font-size: var(--font-ui-smaller);
 	color: var(--text-muted);
@@ -498,15 +504,16 @@
 	color: var(--text-error);
 }
 
-/* The in-progress token field — borderless, blends into the composer. */
+/* The in-progress token field — borderless, fixed-height (drives the row). */
 .microblog-taginput-field {
 	flex: 1;
 	min-width: 6ch;
+	height: var(--tag-row-h);
 	padding: 0;
 	border: none;
 	background: transparent;
 	box-shadow: none !important;
-	font-size: var(--font-ui-smaller);
+	font-size: var(--font-ui-small);
 }
 
 /* Autocomplete panel hangs upward (composer often sits near the viewport edge). */
