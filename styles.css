@@ -106,6 +106,70 @@
 	font-size: 0.85em;
 }
 
+/* Custom dropdown shared by the toolbar sort/filter controls (see Dropdown.tsx).
+   The wrapper is the positioning anchor; the panel hangs from its bottom edge. */
+.microblog-dropdown {
+	position: relative;
+	display: flex;
+}
+
+.microblog-dropdown-panel {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	z-index: var(--layer-menu);
+	display: flex;
+	flex-direction: column;
+	min-width: max-content;
+	margin-top: var(--size-2-1);
+	padding: var(--size-2-1);
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	box-shadow: var(--shadow-s);
+}
+
+/* Right-aligned variant: hang from the trigger's right edge so a control near the
+   pane's right side (the filter) doesn't overflow. */
+.microblog-dropdown-panel.is-right {
+	left: auto;
+	right: 0;
+}
+
+/* Icon + label rows. The `button.` + two classes match Obsidian's tablet padding
+   rule's specificity so our padding wins instead of the injected touch padding. */
+.microblog-dropdown-panel button.microblog-dropdown-item {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: var(--size-4-2);
+	width: 100%;
+	padding: var(--size-4-1) var(--size-4-2);
+	border-radius: var(--radius-s);
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	background: transparent;
+	box-shadow: none;
+	cursor: pointer;
+}
+
+.microblog-dropdown-item:hover,
+.microblog-dropdown-item.is-active {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+/* Fixed-width icon column so labels line up. */
+.microblog-dropdown-item .svg-inline--fa {
+	width: 1em;
+}
+
+/* Trailing check marking the active option. */
+.microblog-dropdown-check {
+	margin-left: auto;
+	color: var(--interactive-accent);
+}
+
 /* ── Post card ────────────────────────────────────────────────────────────── */
 
 .microblog-post {
@@ -157,19 +221,27 @@
 }
 
 .microblog-post-actions button {
-	/* Pin the font-size: the FontAwesome icons are sized in `em`, and on mobile
-	   Obsidian gives buttons a larger touch font-size that would otherwise inflate
-	   them. This keeps the icons matching the footer text on every platform. */
+	/* Pin the font-size: the FontAwesome icons are sized in `em`, so without this
+	   they'd track Obsidian's larger mobile button font. */
 	font-size: var(--font-ui-smaller);
-	/* Mobile gives buttons a tall min-height + line-height for touch; reset both so
-	   our padding actually controls the size. */
-	min-height: 0;
-	line-height: 1;
 	padding: var(--size-4-1) var(--size-4-2);
 	color: var(--text-muted);
 	background: transparent;
 	box-shadow: none;
 	cursor: pointer;
+}
+
+/* Footer icon buttons: a fixed, flex-centered square with no padding. Obsidian's
+   `.is-tablet button:not(.clickable-icon)` injects large padding (specificity
+   0,2,1) that beats plain `.microblog-post-actions button`; matching that
+   specificity here plus an explicit size makes the buttons compact everywhere. */
+.microblog-post-actions button.microblog-icon-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.9em;
+	height: 1.9em;
+	padding: 0;
 }
 
 .microblog-post-actions button:hover {

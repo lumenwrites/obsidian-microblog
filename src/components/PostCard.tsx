@@ -126,17 +126,30 @@ export function PostCard({
 				<span className="microblog-post-date">{formatPostDate(post.created)}</span>
 				<span className="microblog-post-score">{post.score}</span>
 				<div className="microblog-post-actions">
-					<button title="Upvote" onClick={() => void adjustScore(app, post.file, 1)}>
+					<button
+						className="microblog-icon-btn"
+						title="Upvote"
+						onClick={() => void adjustScore(app, post.file, 1)}
+					>
 						<FontAwesomeIcon icon={faArrowUp} />
 					</button>
-					<button title="Downvote" onClick={() => void adjustScore(app, post.file, -1)}>
+					<button
+						className="microblog-icon-btn"
+						title="Downvote"
+						onClick={() => void adjustScore(app, post.file, -1)}
+					>
 						<FontAwesomeIcon icon={faArrowDown} />
 					</button>
-					<button title="Edit in editor" onClick={() => void openPost(app, post.file)}>
+					<button
+						className="microblog-icon-btn"
+						title="Edit in editor"
+						onClick={() => void openPost(app, post.file)}
+					>
 						<FontAwesomeIcon icon={faPenToSquare} />
 					</button>
 					<div className="microblog-post-menu" ref={menuRef}>
 						<button
+							className="microblog-icon-btn"
 							title="More actions"
 							aria-haspopup="true"
 							aria-expanded={menuOpen}

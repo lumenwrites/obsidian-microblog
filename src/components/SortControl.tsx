@@ -1,20 +1,26 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faArrowsRotate, faCaretDown, faClock, faTrophy } from "@fortawesome/free-solid-svg-icons";
+import {
+	faArrowsRotate,
+	faCaretDown,
+	faCheck,
+	faClock,
+	faTrophy,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Menu } from "obsidian";
-import type { MouseEvent } from "react";
+import { cn } from "../lib/utils";
 import type { SortOrder } from "../types";
+import { Dropdown } from "./Dropdown";
 
-/** Sort options, with both a FontAwesome icon (button) and a Lucide name (menu). */
-const OPTIONS: Record<SortOrder, { label: string; icon: IconDefinition; menuIcon: string }> = {
-	chronological: { label: "Newest", icon: faClock, menuIcon: "clock" },
-	score: { label: "Top", icon: faTrophy, menuIcon: "trophy" },
-	resurface: { label: "Resurface", icon: faArrowsRotate, menuIcon: "refresh-cw" },
+/** Sort options, each with a FontAwesome icon. */
+const OPTIONS: Record<SortOrder, { label: string; icon: IconDefinition }> = {
+	chronological: { label: "Newest", icon: faClock },
+	score: { label: "Top", icon: faTrophy },
+	resurface: { label: "Resurface", icon: faArrowsRotate },
 };
 
 const ORDER: SortOrder[] = ["chronological", "score", "resurface"];
 
-/** A dropdown trigger that opens an Obsidian Menu with icon'd, checkable options. */
+/** A trigger that opens our custom dropdown with icon'd, checkable sort options. */
 export function SortControl({
 	sort,
 	onSort,
@@ -24,26 +30,39 @@ export function SortControl({
 }) {
 	const current = OPTIONS[sort];
 
-	const openMenu = (e: MouseEvent) => {
-		const menu = new Menu();
-		for (const key of ORDER) {
-			const opt = OPTIONS[key];
-			menu.addItem((item) =>
-				item
-					.setTitle(opt.label)
-					.setIcon(opt.menuIcon)
-					.setChecked(key === sort)
-					.onClick(() => onSort(key)),
-			);
-		}
-		menu.showAtMouseEvent(e.nativeEvent);
-	};
-
 	return (
-		<button className="microblog-sort" onClick={openMenu} title="Sort posts">
-			<FontAwesomeIcon icon={current.icon} />
-			<span>{current.label}</span>
-			<FontAwesomeIcon icon={faCaretDown} className="microblog-sort-caret" />
-		</button>
+		<Dropdown
+			trigger={({ toggle }) => (
+				<button className="microblog-sort" onClick={toggle} title="Sort posts">
+					<FontAwesomeIcon icon={current.icon} />
+					<span>{current.label}</span>
+					<FontAwesomeIcon icon={faCaretDown} className="microblog-sort-caret" />
+				</button>
+			)}
+		>
+			{(close) =>
+				ORDER.map((key) => {
+					const opt = OPTIONS[key];
+					return (
+						<button
+							key={key}
+							role="menuitemradio"
+							aria-checked={key === sort}
+							className={cn("microblog-dropdown-item", key === sort && "is-active")}
+							onClick={() => {
+								onSort(key);
+								close();
+							}}
+						>
+							<FontAwesomeIcon icon={opt.icon} />
+							<span>{opt.label}</span>
+							{key === sort && (
+								<FontAwesomeIcon icon={faCheck} className="microblog-dropdown-check" />
+							)}
+						</button>
+					);
+				})
+			}
+		</Dropdown>
 	);
 }
