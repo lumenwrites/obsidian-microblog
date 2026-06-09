@@ -119,6 +119,29 @@ export async function deletePost(app: App, file: TFile): Promise<void> {
 	await app.fileManager.trashFile(file);
 }
 
+/** Subfolder (beside the post) that archived posts are moved into. */
+export const ARCHIVE_DIR = "archived";
+
+/**
+ * Move a post into an `archived/` subfolder next to it (created if needed). Because
+ * the timeline lists only *direct* children of its folder, archived posts drop out of
+ * the timeline and stats but stay in the vault — reversible, and the archive folder
+ * can itself be opened as a timeline. Uses `renameFile` so links are preserved.
+ */
+export async function archivePost(app: App, file: TFile): Promise<void> {
+	const parent = file.parent?.path ?? "";
+	const dir = normalizePath(parent ? `${parent}/${ARCHIVE_DIR}` : ARCHIVE_DIR);
+	if (!(app.vault.getAbstractFileByPath(dir) instanceof TFolder)) {
+		await app.vault.createFolder(dir);
+	}
+
+	let target = `${dir}/${file.name}`;
+	for (let i = 1; app.vault.getAbstractFileByPath(target); i++) {
+		target = `${dir}/${file.basename}-${i}.${file.extension}`;
+	}
+	await app.fileManager.renameFile(file, target);
+}
+
 /** Open a post in a new tab for full editing in Obsidian's real editor. */
 export async function openPost(app: App, file: TFile): Promise<void> {
 	await app.workspace.getLeaf("tab").openFile(file);

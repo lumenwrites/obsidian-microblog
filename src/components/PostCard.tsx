@@ -9,7 +9,7 @@ import { Menu, Notice } from "obsidian";
 import { MouseEvent, useState } from "react";
 import { useApp, useSettings } from "../context/PluginContext";
 import { confirm } from "../lib/confirm";
-import { adjustScore, deletePost, openPost } from "../lib/posts";
+import { adjustScore, archivePost, deletePost, openPost } from "../lib/posts";
 import { cn, formatPostDate } from "../lib/utils";
 import type { Post } from "../types";
 import { MarkdownPreview } from "./MarkdownPreview";
@@ -49,6 +49,11 @@ export function PostCard({
 		new Notice("Cross-posting isn't set up yet.");
 	};
 
+	const archive = async () => {
+		await archivePost(app, post.file);
+		new Notice("Moved to archived.");
+	};
+
 	const remove = async () => {
 		const ok = await confirm(app, {
 			title: "Delete post",
@@ -59,11 +64,14 @@ export function PostCard({
 		if (ok) await deletePost(app, post.file);
 	};
 
-	// The ⋯ menu holds the secondary actions (reply, share, delete) as an Obsidian Menu.
+	// The ⋯ menu holds the secondary actions (reply, share, archive, delete) as an Obsidian Menu.
 	const openMenu = (e: MouseEvent) => {
 		const menu = new Menu();
 		menu.addItem((item) => item.setTitle("Reply").setIcon("reply").onClick(onReply));
 		menu.addItem((item) => item.setTitle("Share").setIcon("share").onClick(share));
+		menu.addItem((item) =>
+			item.setTitle("Archive").setIcon("archive").onClick(() => void archive()),
+		);
 		menu.addItem((item) =>
 			item
 				.setTitle("Delete")
