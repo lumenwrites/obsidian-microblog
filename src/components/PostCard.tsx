@@ -1,14 +1,12 @@
 import {
 	faArrowDown,
 	faArrowUp,
+	faEllipsis,
 	faPenToSquare,
-	faReply,
-	faShareNodes,
-	faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Notice } from "obsidian";
-import { useState } from "react";
+import { Menu, Notice } from "obsidian";
+import { MouseEvent, useState } from "react";
 import { useApp, useSettings } from "../context/PluginContext";
 import { confirm } from "../lib/confirm";
 import { adjustScore, deletePost, openPost } from "../lib/posts";
@@ -20,11 +18,13 @@ import { MarkdownPreview } from "./MarkdownPreview";
 const MAX_INDENT_DEPTH = 5;
 
 /**
- * One post in the timeline: metadata + actions header, the rendered markdown body
- * (folded behind "read more" when longer than the soft limit), and clickable tags.
+ * One post in the timeline: the rendered markdown body (folded behind "read more"
+ * when longer than the soft limit) with a bottom-right footer holding the meta and
+ * primary actions (date, score, vote, edit) plus a ⋯ menu for the rest (reply, share,
+ * delete).
  *
- * `depth` is its position in a reply thread (0 = root); it indents and draws a
- * thread line. `isReplyTarget` highlights the post currently being replied to.
+ * `depth` is its position in a reply thread (0 = root); it indents and draws a thread
+ * line. `isReplyTarget` highlights the post currently being replied to.
  */
 export function PostCard({
 	post,
@@ -59,6 +59,21 @@ export function PostCard({
 		if (ok) await deletePost(app, post.file);
 	};
 
+	// The ⋯ menu holds the secondary actions (reply, share, delete) as an Obsidian Menu.
+	const openMenu = (e: MouseEvent) => {
+		const menu = new Menu();
+		menu.addItem((item) => item.setTitle("Reply").setIcon("reply").onClick(onReply));
+		menu.addItem((item) => item.setTitle("Share").setIcon("share").onClick(share));
+		menu.addItem((item) =>
+			item
+				.setTitle("Delete")
+				.setIcon("trash")
+				.setWarning(true)
+				.onClick(() => void remove()),
+		);
+		menu.showAtMouseEvent(e.nativeEvent);
+	};
+
 	return (
 		<article
 			className={cn(
@@ -68,31 +83,6 @@ export function PostCard({
 			)}
 			style={{ marginInlineStart: `${Math.min(depth, MAX_INDENT_DEPTH) * 1.25}rem` }}
 		>
-			<div className="microblog-post-header">
-				<span className="microblog-post-date">{formatPostDate(post.created)}</span>
-				<span className="microblog-post-score">{post.score}</span>
-				<div className="microblog-post-actions">
-					<button title="Reply" onClick={onReply}>
-						<FontAwesomeIcon icon={faReply} />
-					</button>
-					<button title="Upvote" onClick={() => void adjustScore(app, post.file, 1)}>
-						<FontAwesomeIcon icon={faArrowUp} />
-					</button>
-					<button title="Downvote" onClick={() => void adjustScore(app, post.file, -1)}>
-						<FontAwesomeIcon icon={faArrowDown} />
-					</button>
-					<button title="Share" onClick={share}>
-						<FontAwesomeIcon icon={faShareNodes} />
-					</button>
-					<button title="Edit in editor" onClick={() => void openPost(app, post.file)}>
-						<FontAwesomeIcon icon={faPenToSquare} />
-					</button>
-					<button title="Delete" onClick={() => void remove()}>
-						<FontAwesomeIcon icon={faTrash} />
-					</button>
-				</div>
-			</div>
-
 			<div className={cn("microblog-post-body", foldable && !expanded && "is-collapsed")}>
 				<MarkdownPreview
 					markdown={post.body}
@@ -106,6 +96,25 @@ export function PostCard({
 					{expanded ? "Show less" : "Read more"}
 				</button>
 			)}
+
+			<footer className="microblog-post-footer">
+				<span className="microblog-post-date">{formatPostDate(post.created)}</span>
+				<span className="microblog-post-score">{post.score}</span>
+				<div className="microblog-post-actions">
+					<button title="Upvote" onClick={() => void adjustScore(app, post.file, 1)}>
+						<FontAwesomeIcon icon={faArrowUp} />
+					</button>
+					<button title="Downvote" onClick={() => void adjustScore(app, post.file, -1)}>
+						<FontAwesomeIcon icon={faArrowDown} />
+					</button>
+					<button title="Edit in editor" onClick={() => void openPost(app, post.file)}>
+						<FontAwesomeIcon icon={faPenToSquare} />
+					</button>
+					<button title="More actions" onClick={openMenu}>
+						<FontAwesomeIcon icon={faEllipsis} />
+					</button>
+				</div>
+			</footer>
 		</article>
 	);
 }

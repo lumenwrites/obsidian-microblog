@@ -130,7 +130,7 @@ src/
     Timeline.tsx       the screen: search/sort bar → feed → composer; filter/sort/scroll
     SearchSortBar.tsx  text search (+ clear) and sort control
     SortControl.tsx    dropdown trigger → Obsidian Menu with icon'd sort options
-    PostCard.tsx       one post: header/actions, folded markdown body
+    PostCard.tsx       one post: folded markdown body + bottom-right footer (date/score/vote/edit + ⋯ menu)
     Composer.tsx       textarea + char-count ring + NOTE button
     CharCountRing.tsx  circular char-count indicator
     MarkdownPreview.tsx renders a post body via MarkdownRenderer.render; intercepts #tag clicks

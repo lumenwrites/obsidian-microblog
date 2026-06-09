@@ -126,17 +126,15 @@
 	box-shadow: 0 0 0 1px var(--interactive-accent);
 }
 
-.microblog-post-header {
+/* Meta + actions live in a right-aligned footer below the body. */
+.microblog-post-footer {
 	display: flex;
 	align-items: center;
+	justify-content: flex-end;
 	gap: var(--size-4-2);
-	margin-bottom: var(--size-4-1);
+	margin-top: var(--size-4-2);
 	font-size: var(--font-ui-smaller);
 	color: var(--text-muted);
-}
-
-.microblog-post-date {
-	flex: 1;
 }
 
 .microblog-post-score {
@@ -148,13 +146,6 @@
 .microblog-post-actions {
 	display: flex;
 	gap: var(--size-2-1);
-	opacity: 0;
-	transition: opacity 120ms ease;
-}
-
-.microblog-post:hover .microblog-post-actions,
-.microblog-post:focus-within .microblog-post-actions {
-	opacity: 1;
 }
 
 .microblog-post-actions button {
