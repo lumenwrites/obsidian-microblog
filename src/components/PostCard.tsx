@@ -1,12 +1,16 @@
 import {
 	faArrowDown,
 	faArrowUp,
+	faBoxArchive,
 	faEllipsis,
 	faPenToSquare,
+	faReply,
+	faShareNodes,
+	faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Menu, Notice } from "obsidian";
-import { MouseEvent, useState } from "react";
+import { Notice } from "obsidian";
+import { useEffect, useRef, useState } from "react";
 import { useApp, useSettings } from "../context/PluginContext";
 import { adjustScore, archivePost, deletePost, openPost } from "../lib/posts";
 import { cn, formatPostDate } from "../lib/utils";
@@ -53,22 +57,34 @@ export function PostCard({
 		new Notice("Moved to archived.");
 	};
 
-	// The ⋯ menu holds the secondary actions (reply, share, archive, delete) as an Obsidian Menu.
-	const openMenu = (e: MouseEvent) => {
-		const menu = new Menu();
-		menu.addItem((item) => item.setTitle("Reply").setIcon("reply").onClick(onReply));
-		menu.addItem((item) => item.setTitle("Share").setIcon("share").onClick(share));
-		menu.addItem((item) =>
-			item.setTitle("Archive").setIcon("archive").onClick(() => void archive()),
-		);
-		menu.addItem((item) =>
-			item
-				.setTitle("Delete")
-				.setIcon("trash")
-				.setWarning(true)
-				.onClick(() => void deletePost(app, post.file)),
-		);
-		menu.showAtMouseEvent(e.nativeEvent);
+	// The ⋯ button opens a small custom dropdown anchored to its bottom-right,
+	// holding the secondary actions (reply, share, archive, delete) as icon buttons
+	// styled like the footer action buttons. We close it on outside-click / Escape.
+	const [menuOpen, setMenuOpen] = useState(false);
+	const menuRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!menuOpen) return;
+		const onPointerDown = (e: PointerEvent) => {
+			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+				setMenuOpen(false);
+			}
+		};
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape") setMenuOpen(false);
+		};
+		activeDocument.addEventListener("pointerdown", onPointerDown);
+		activeDocument.addEventListener("keydown", onKeyDown);
+		return () => {
+			activeDocument.removeEventListener("pointerdown", onPointerDown);
+			activeDocument.removeEventListener("keydown", onKeyDown);
+		};
+	}, [menuOpen]);
+
+	// Close the dropdown, then run the chosen action.
+	const runAction = (fn: () => void) => {
+		setMenuOpen(false);
+		fn();
 	};
 
 	return (
@@ -107,9 +123,43 @@ export function PostCard({
 					<button title="Edit in editor" onClick={() => void openPost(app, post.file)}>
 						<FontAwesomeIcon icon={faPenToSquare} />
 					</button>
-					<button title="More actions" onClick={openMenu}>
-						<FontAwesomeIcon icon={faEllipsis} />
-					</button>
+					<div className="microblog-post-menu" ref={menuRef}>
+						<button
+							title="More actions"
+							aria-haspopup="true"
+							aria-expanded={menuOpen}
+							onClick={() => setMenuOpen((v) => !v)}
+						>
+							<FontAwesomeIcon icon={faEllipsis} />
+						</button>
+						{menuOpen && (
+							<div className="microblog-post-menu-dropdown" role="menu">
+								<button role="menuitem" onClick={() => runAction(onReply)}>
+									<FontAwesomeIcon icon={faReply} />
+									<span>Reply</span>
+								</button>
+								<button role="menuitem" onClick={() => runAction(share)}>
+									<FontAwesomeIcon icon={faShareNodes} />
+									<span>Share</span>
+								</button>
+								<button
+									role="menuitem"
+									onClick={() => runAction(() => void archive())}
+								>
+									<FontAwesomeIcon icon={faBoxArchive} />
+									<span>Archive</span>
+								</button>
+								<button
+									role="menuitem"
+									className="is-danger"
+									onClick={() => runAction(() => void deletePost(app, post.file))}
+								>
+									<FontAwesomeIcon icon={faTrash} />
+									<span>Delete</span>
+								</button>
+							</div>
+						)}
+					</div>
 				</div>
 			</footer>
 		</article>

@@ -164,6 +164,52 @@
 	background: var(--background-modifier-hover);
 }
 
+/* Custom ⋯ dropdown. The trigger's wrapper is the positioning anchor; the panel
+   hangs from its bottom-right. Items reuse the footer action-button styling
+   (.microblog-post-actions button, since this lives inside it) so they're the
+   same size and tappability. */
+.microblog-post-menu {
+	position: relative;
+	display: flex;
+}
+
+.microblog-post-menu-dropdown {
+	position: absolute;
+	top: 100%;
+	right: 0;
+	z-index: var(--layer-menu);
+	display: flex;
+	flex-direction: column;
+	min-width: max-content;
+	margin-top: var(--size-2-1);
+	padding: var(--size-2-1);
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	box-shadow: var(--shadow-s);
+}
+
+/* Icon + text rows. Same vertical padding as the footer buttons; left-aligned
+   with a gap, and stretched to fill the panel width. */
+.microblog-post-menu-dropdown button {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: var(--size-4-2);
+	width: 100%;
+	border-radius: var(--radius-s);
+	font-size: var(--font-ui-smaller);
+}
+
+/* Fixed-width icon column so the labels line up. */
+.microblog-post-menu-dropdown button .svg-inline--fa {
+	width: 1em;
+}
+
+.microblog-post-menu-dropdown button.is-danger:hover {
+	color: var(--text-error);
+}
+
 /* Rendered markdown body. Tighten the default note margins inside a card. */
 .microblog-post-body :first-child {
 	margin-top: 0;
