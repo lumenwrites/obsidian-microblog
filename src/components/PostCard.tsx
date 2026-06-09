@@ -12,11 +12,12 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Notice } from "obsidian";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useApp, useSettings } from "../context/PluginContext";
 import { adjustScore, archivePost, deletePost, openPost, setDone } from "../lib/posts";
 import { cn, formatPostDate } from "../lib/utils";
 import type { Post } from "../types";
+import { Dropdown } from "./Dropdown";
 import { MarkdownPreview } from "./MarkdownPreview";
 
 /** How many nesting levels still add indentation before it's capped (deep threads). */
@@ -62,36 +63,6 @@ export function PostCard({
 	const done = post.done != null;
 	const toggleDone = async () => {
 		await setDone(app, post.file, !done);
-	};
-
-	// The ⋯ button opens a small custom dropdown anchored to its bottom-right,
-	// holding the secondary actions (reply, share, archive, delete) as icon buttons
-	// styled like the footer action buttons. We close it on outside-click / Escape.
-	const [menuOpen, setMenuOpen] = useState(false);
-	const menuRef = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		if (!menuOpen) return;
-		const onPointerDown = (e: PointerEvent) => {
-			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-				setMenuOpen(false);
-			}
-		};
-		const onKeyDown = (e: KeyboardEvent) => {
-			if (e.key === "Escape") setMenuOpen(false);
-		};
-		activeDocument.addEventListener("pointerdown", onPointerDown);
-		activeDocument.addEventListener("keydown", onKeyDown);
-		return () => {
-			activeDocument.removeEventListener("pointerdown", onPointerDown);
-			activeDocument.removeEventListener("keydown", onKeyDown);
-		};
-	}, [menuOpen]);
-
-	// Close the dropdown, then run the chosen action.
-	const runAction = (fn: () => void) => {
-		setMenuOpen(false);
-		fn();
 	};
 
 	return (
@@ -147,48 +118,80 @@ export function PostCard({
 					>
 						<FontAwesomeIcon icon={faPenToSquare} />
 					</button>
-					<div className="microblog-post-menu" ref={menuRef}>
-						<button
-							className="microblog-icon-btn"
-							title="More actions"
-							aria-haspopup="true"
-							aria-expanded={menuOpen}
-							onClick={() => setMenuOpen((v) => !v)}
-						>
-							<FontAwesomeIcon icon={faEllipsis} />
-						</button>
-						{menuOpen && (
-							<div className="microblog-post-menu-dropdown" role="menu">
-								<button role="menuitem" onClick={() => runAction(() => void toggleDone())}>
+					<Dropdown
+						align="right"
+						trigger={({ open, toggle }) => (
+							<button
+								className="microblog-icon-btn"
+								title="More actions"
+								aria-haspopup="true"
+								aria-expanded={open}
+								onClick={toggle}
+							>
+								<FontAwesomeIcon icon={faEllipsis} />
+							</button>
+						)}
+					>
+						{(close) => (
+							<>
+								<button
+									className="microblog-dropdown-item"
+									role="menuitem"
+									onClick={() => {
+										close();
+										void toggleDone();
+									}}
+								>
 									<FontAwesomeIcon icon={done ? faCheck : faSquare} />
 									<span>Done</span>
 								</button>
-								<button role="menuitem" onClick={() => runAction(onReply)}>
+								<button
+									className="microblog-dropdown-item"
+									role="menuitem"
+									onClick={() => {
+										close();
+										onReply();
+									}}
+								>
 									<FontAwesomeIcon icon={faReply} />
 									<span>Reply</span>
 								</button>
-								<button role="menuitem" onClick={() => runAction(share)}>
+								<button
+									className="microblog-dropdown-item"
+									role="menuitem"
+									onClick={() => {
+										close();
+										share();
+									}}
+								>
 									<FontAwesomeIcon icon={faShareNodes} />
 									<span>Share</span>
 								</button>
 								<button
+									className="microblog-dropdown-item"
 									role="menuitem"
-									onClick={() => runAction(() => void archive())}
+									onClick={() => {
+										close();
+										void archive();
+									}}
 								>
 									<FontAwesomeIcon icon={faBoxArchive} />
 									<span>Archive</span>
 								</button>
 								<button
+									className="microblog-dropdown-item is-danger"
 									role="menuitem"
-									className="is-danger"
-									onClick={() => runAction(() => void deletePost(app, post.file))}
+									onClick={() => {
+										close();
+										void deletePost(app, post.file);
+									}}
 								>
 									<FontAwesomeIcon icon={faTrash} />
 									<span>Delete</span>
 								</button>
-							</div>
+							</>
 						)}
-					</div>
+					</Dropdown>
 				</div>
 			</footer>
 		</article>
