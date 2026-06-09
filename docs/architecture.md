@@ -142,7 +142,6 @@ src/
     StatsWidget.tsx    contribution graph + backfilled streak + total (under the composer)
   lib/
     posts.ts           data layer: file ↔ Post CRUD over vault/metadataCache/fileManager
-    confirm.ts         promise-based confirmation Modal (used by delete)
     stats.ts           pure stats math: one carry pass → backfilled 30-day graph + streak
     utils.ts           cn() (clsx), formatPostDate()
   types/

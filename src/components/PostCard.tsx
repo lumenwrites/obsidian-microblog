@@ -8,7 +8,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Menu, Notice } from "obsidian";
 import { MouseEvent, useState } from "react";
 import { useApp, useSettings } from "../context/PluginContext";
-import { confirm } from "../lib/confirm";
 import { adjustScore, archivePost, deletePost, openPost } from "../lib/posts";
 import { cn, formatPostDate } from "../lib/utils";
 import type { Post } from "../types";
@@ -54,16 +53,6 @@ export function PostCard({
 		new Notice("Moved to archived.");
 	};
 
-	const remove = async () => {
-		const ok = await confirm(app, {
-			title: "Delete post",
-			message: "This moves the note to your vault trash. You can restore it from there.",
-			cta: "Delete",
-			danger: true,
-		});
-		if (ok) await deletePost(app, post.file);
-	};
-
 	// The ⋯ menu holds the secondary actions (reply, share, archive, delete) as an Obsidian Menu.
 	const openMenu = (e: MouseEvent) => {
 		const menu = new Menu();
@@ -77,7 +66,7 @@ export function PostCard({
 				.setTitle("Delete")
 				.setIcon("trash")
 				.setWarning(true)
-				.onClick(() => void remove()),
+				.onClick(() => void deletePost(app, post.file)),
 		);
 		menu.showAtMouseEvent(e.nativeEvent);
 	};
