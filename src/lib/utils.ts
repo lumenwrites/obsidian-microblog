@@ -25,7 +25,7 @@ export async function run(action: () => Promise<unknown>, failMsg: string): Prom
 	}
 }
 
-/** Human-readable post timestamp, e.g. "Jun 9, 2026, 2:32 PM". */
+/** Full post timestamp for tooltips, e.g. "Jun 9, 2026, 2:32 PM". */
 export function formatPostDate(ts: number): string {
 	return new Date(ts).toLocaleString(undefined, {
 		month: "short",
@@ -34,4 +34,24 @@ export function formatPostDate(ts: number): string {
 		hour: "numeric",
 		minute: "2-digit",
 	});
+}
+
+/**
+ * Compact relative age, reddit/bluesky style: "now", "5m", "3h", "4d", "2w", "5mo",
+ * "1y". Computed on render (doesn't tick); reloads recompute it. `now` is injectable
+ * for testing.
+ */
+export function formatRelativeDate(ts: number, now: number = Date.now()): string {
+	const seconds = Math.max(0, Math.floor((now - ts) / 1000));
+	if (seconds < 60) return "now";
+	const minutes = Math.floor(seconds / 60);
+	if (minutes < 60) return `${minutes}m`;
+	const hours = Math.floor(minutes / 60);
+	if (hours < 24) return `${hours}h`;
+	const days = Math.floor(hours / 24);
+	if (days < 7) return `${days}d`;
+	if (days < 30) return `${Math.floor(days / 7)}w`;
+	const months = Math.floor(days / 30);
+	if (months < 12) return `${months}mo`;
+	return `${Math.floor(days / 365)}y`;
 }

@@ -209,10 +209,22 @@
 	padding: 2px 0;
 }
 
+/* Centered box matching the vote buttons' footprint, so the score is padded like them. */
 .microblog-post-score {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 1.9em;
+	height: 1.9em;
+	padding: 0 var(--size-4-1);
 	font-weight: var(--font-semibold);
 	color: var(--text-normal);
 	font-variant-numeric: tabular-nums;
+}
+
+/* Compact relative date ("4d", "3h") — never wraps; full date is in the tooltip. */
+.microblog-post-date {
+	white-space: nowrap;
 }
 
 /* "Done" check at the left of the footer cluster. */

@@ -104,7 +104,6 @@ export function TagInput({
 						title="Remove tag"
 						onClick={() => onTagsChange(tags.filter((x) => x !== tag))}
 					>
-						<FontAwesomeIcon icon={faHashtag} className="microblog-tag-hash" />
 						<span>{tag}</span>
 						<FontAwesomeIcon icon={faXmark} />
 					</button>

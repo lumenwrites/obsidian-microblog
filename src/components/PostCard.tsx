@@ -17,7 +17,7 @@ import { Notice } from "obsidian";
 import { useState } from "react";
 import { useApp, useSettings } from "../context/PluginContext";
 import { adjustScore, archivePost, deletePost, openPost, setDone } from "../lib/posts";
-import { cn, formatPostDate, run } from "../lib/utils";
+import { cn, formatPostDate, formatRelativeDate, run } from "../lib/utils";
 import type { Post } from "../types";
 import { Dropdown } from "./Dropdown";
 import { MarkdownPreview } from "./MarkdownPreview";
@@ -138,7 +138,9 @@ export function PostCard({
 						<FontAwesomeIcon icon={faCheck} />
 					</span>
 				)}
-				<span className="microblog-post-date">{formatPostDate(post.created)}</span>
+				<span className="microblog-post-date" title={formatPostDate(post.created)}>
+					{formatRelativeDate(post.created)}
+				</span>
 				<span className="microblog-post-score">{post.score}</span>
 				<div className="microblog-post-actions">
 					<button
