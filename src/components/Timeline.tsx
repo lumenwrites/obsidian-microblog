@@ -9,10 +9,19 @@ import { PostCard } from "./PostCard";
 import { SearchSortBar } from "./SearchSortBar";
 import { StatsWidget } from "./StatsWidget";
 
-/** A post placed in display order, with its reply-nesting depth (0 = root). */
+/**
+ * A post placed in display order.
+ * - `depth` = reply nesting (0 = root); `depth > 0` marks a reply (draws the thread bar).
+ * - `indent` = visual indent level. A purely *linear* thread renders flat (all replies
+ *   at indent 1, Twitter/Bluesky self-thread style) — unambiguous, since a single chain
+ *   has no siblings. As soon as a thread branches *anywhere*, the whole thread switches
+ *   to Reddit-style per-depth indentation (indent = depth) so a reply-to-a-reply can't
+ *   be mistaken for a sibling reply.
+ */
 interface Row {
 	post: Post;
 	depth: number;
+	indent: number;
 }
 
 /**
@@ -84,7 +93,7 @@ export function Timeline() {
 			return pool
 				.filter(matches)
 				.sort(compareRoots)
-				.map((post) => ({ post, depth: 0 }));
+				.map((post) => ({ post, depth: 0, indent: 0 }));
 		}
 
 		// Threaded: parent → children, plus the roots (top-level or orphaned replies).
@@ -118,14 +127,22 @@ export function Timeline() {
 
 		roots.sort(compareRoots);
 
-		// DFS into a flat list in display order, carrying depth for indentation (one
-		// level per reply depth, so reply-to-a-reply nests visibly under its parent).
-		const out: Row[] = [];
-		const walk = (post: Post, depth: number) => {
-			out.push({ post, depth });
-			for (const child of childrenOf.get(post.id) ?? []) walk(child, depth + 1);
+		// Does a root's subtree fork anywhere? If not, it's a single linear chain and
+		// renders flat; if so, the whole thread uses per-depth indentation.
+		const subtreeBranches = (post: Post): boolean => {
+			const children = childrenOf.get(post.id) ?? [];
+			return children.length > 1 || children.some(subtreeBranches);
 		};
-		roots.forEach((root) => walk(root, 0));
+
+		// DFS into a flat list in display order. `branching` is fixed per root: a linear
+		// thread keeps replies at indent 1 (flat); a branching one indents per depth.
+		const out: Row[] = [];
+		const walk = (post: Post, depth: number, branching: boolean) => {
+			const indent = branching ? depth : Math.min(depth, 1);
+			out.push({ post, depth, indent });
+			for (const child of childrenOf.get(post.id) ?? []) walk(child, depth + 1, branching);
+		};
+		roots.forEach((root) => walk(root, 0, subtreeBranches(root)));
 		return out;
 	}, [posts, query, sort, dir, filter]);
 
@@ -192,11 +209,12 @@ export function Timeline() {
 									: "No posts yet — write your first one."}
 				</p>
 			) : (
-				rows.map(({ post, depth }) => (
+				rows.map(({ post, depth, indent }) => (
 					<PostCard
 						key={post.path}
 						post={post}
 						depth={depth}
+						indent={indent}
 						isReplyTarget={replyTarget?.id === post.id}
 						onSelectTag={selectTag}
 						onReply={() => setReplyTarget(post)}
