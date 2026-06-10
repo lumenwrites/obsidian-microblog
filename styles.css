@@ -640,19 +640,17 @@ body.is-mobile .microblog-taginput-row button.microblog-taginput-chip {
 	background: var(--background-modifier-hover);
 }
 
+/* A normal Obsidian button (not the accent/purple primary), so it matches the
+   other controls — sort/filter triggers, dropdown items — at rest and on hover.
+   We leave background/hover to Obsidian's defaults (--interactive-normal /
+   --interactive-hover); only the layout + label styling is ours. */
 .microblog-note-btn {
 	display: inline-flex;
 	align-items: center;
 	gap: var(--size-4-1);
 	font-weight: var(--font-semibold);
 	letter-spacing: 0.04em;
-	color: var(--text-on-accent);
-	background: var(--interactive-accent);
 	cursor: pointer;
-}
-
-.microblog-note-btn:hover:not(:disabled) {
-	background: var(--interactive-accent-hover);
 }
 
 .microblog-note-btn:disabled {
