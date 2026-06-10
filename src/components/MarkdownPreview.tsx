@@ -53,5 +53,8 @@ export function MarkdownPreview({
 		};
 	}, [app, markdown, sourcePath, onTagClick]);
 
-	return <div className="microblog-markdown" ref={ref} />;
+	// `markdown-rendered` is the class Obsidian's reading-view CSS is scoped under, so it's
+	// what gives blockquotes their left bar, plus callouts/tables/code-block styling, etc.
+	// Without it, MarkdownRenderer.render emits correct HTML but it renders unstyled.
+	return <div className="microblog-markdown markdown-rendered" ref={ref} />;
 }
