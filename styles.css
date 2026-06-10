@@ -568,16 +568,16 @@ body.is-mobile .microblog-taginput-chip {
 	font-size: var(--font-ui-small);
 }
 
-/* Autocomplete panel hangs upward (composer often sits near the viewport edge). */
+/* Autocomplete panel hangs down from the input. */
 .microblog-taginput-suggestions {
 	position: absolute;
-	bottom: 100%;
+	top: 100%;
 	left: 0;
 	z-index: var(--layer-menu);
 	display: flex;
 	flex-direction: column;
 	min-width: 8em;
-	margin-bottom: var(--size-2-1);
+	margin-top: var(--size-2-1);
 	padding: var(--size-2-1);
 	background: var(--background-secondary);
 	border: 1px solid var(--background-modifier-border);
@@ -585,7 +585,13 @@ body.is-mobile .microblog-taginput-chip {
 	box-shadow: var(--shadow-s);
 }
 
-.microblog-taginput-suggestion {
+/* `button.` + two classes match Obsidian's mobile/tablet button-padding specificity
+   so our compact, left-aligned padding wins instead of the injected touch padding. */
+.microblog-taginput-suggestions button.microblog-taginput-suggestion {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	width: 100%;
 	padding: var(--size-2-1) var(--size-4-1);
 	border-radius: var(--radius-s);
 	text-align: left;
