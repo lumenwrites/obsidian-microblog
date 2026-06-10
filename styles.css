@@ -265,9 +265,11 @@
 	cursor: pointer;
 }
 
+/* Neutral hover: whiter text + a slightly brighter grey bg (not accent/purple).
+   Kept identical to the tag-input chip hover so the two look the same. */
 .microblog-post-tag:hover {
-	color: var(--text-on-accent);
-	background: var(--interactive-accent);
+	color: var(--text-normal);
+	background: var(--background-modifier-border);
 }
 
 /* The leading "#" on a tag chip/badge — slightly dimmed so the label reads first. */
@@ -568,10 +570,10 @@ body.is-mobile .microblog-taginput-row button.microblog-taginput-chip {
 }
 
 /* Plain "slightly brighter" highlight on hover (it's the click-to-remove target) —
-   not a loud red/accent, just a touch more contrast. */
+   not a loud red/accent, just a touch more contrast. Identical to .microblog-post-tag:hover. */
 .microblog-taginput-row button.microblog-taginput-chip:hover {
 	color: var(--text-normal);
-	background: var(--background-modifier-active-hover);
+	background: var(--background-modifier-border);
 }
 
 /* The in-progress token field — borderless, fixed-height (drives the row). */
