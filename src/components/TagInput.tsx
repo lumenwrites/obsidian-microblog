@@ -1,6 +1,6 @@
 import { faHashtag, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { ChangeEvent, KeyboardEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "../lib/utils";
 
 /**
@@ -40,13 +40,29 @@ export function TagInput({
 	suggestions: string[];
 }) {
 	const [highlight, setHighlight] = useState(0);
+	const [open, setOpen] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
 
 	const matches = useMemo(() => {
 		const q = input.trim().toLowerCase();
 		if (!q) return [];
 		return suggestions.filter((t) => !has(tags, t) && t.toLowerCase().includes(q)).slice(0, 8);
 	}, [input, tags, suggestions]);
+
+	// Close the suggestions on an outside tap (works for touch too) or Escape. The
+	// panel showing depends only on matching text otherwise, so without this a tap
+	// away from the field on mobile would leave it open.
+	useEffect(() => {
+		if (!open) return;
+		const onPointerDown = (e: PointerEvent) => {
+			if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+				setOpen(false);
+			}
+		};
+		activeDocument.addEventListener("pointerdown", onPointerDown);
+		return () => activeDocument.removeEventListener("pointerdown", onPointerDown);
+	}, [open]);
 
 	const commit = (raw: string) => {
 		const t = normalizeTag(raw);
@@ -59,6 +75,7 @@ export function TagInput({
 	const onChange = (e: ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value;
 		setHighlight(0);
+		setOpen(true);
 		if (!/[,\s]/.test(value)) {
 			onInputChange(value);
 			return;
@@ -75,7 +92,10 @@ export function TagInput({
 	};
 
 	const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === "Enter") {
+		if (e.key === "Escape" && open) {
+			e.preventDefault();
+			setOpen(false);
+		} else if (e.key === "Enter") {
 			e.preventDefault();
 			if (matches.length) commit(matches[Math.min(highlight, matches.length - 1)]);
 			else if (input.trim()) commit(input);
@@ -91,7 +111,11 @@ export function TagInput({
 	};
 
 	return (
-		<div className="microblog-taginput" onClick={() => inputRef.current?.focus()}>
+		<div
+			className="microblog-taginput"
+			ref={containerRef}
+			onClick={() => inputRef.current?.focus()}
+		>
 			<FontAwesomeIcon icon={faHashtag} className="microblog-taginput-icon" />
 			{/* The chips + field scroll horizontally as a unit; the suggestions panel
 			    stays outside this row (sibling) so it isn't clipped by the overflow. */}
@@ -115,9 +139,10 @@ export function TagInput({
 					value={input}
 					onChange={onChange}
 					onKeyDown={onKeyDown}
+					onFocus={() => setOpen(true)}
 				/>
 			</div>
-			{matches.length > 0 && (
+			{open && matches.length > 0 && (
 				<div className="microblog-taginput-suggestions" role="listbox">
 					{matches.map((m, i) => (
 						<button

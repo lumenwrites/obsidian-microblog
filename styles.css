@@ -484,9 +484,16 @@ body.is-mobile .microblog-taginput-chip {
 
 .microblog-composer-actions {
 	display: flex;
-	align-items: center;
+	/* Stretch so the tag input matches the NOTE button's height (taller on mobile,
+	   where Obsidian pads buttons) for aligned tops/bottoms. */
+	align-items: stretch;
 	justify-content: flex-end;
 	gap: var(--size-4-3);
+}
+
+/* Keep the fixed-size char-count ring centered rather than stretched. */
+.microblog-composer-actions > .microblog-charcount {
+	align-self: center;
 }
 
 /* ── Tag input (composer, left of the char-count ring) ────────────────────── */
@@ -602,8 +609,8 @@ body.is-mobile .microblog-taginput-chip {
 	cursor: pointer;
 }
 
-.microblog-taginput-suggestion:hover,
-.microblog-taginput-suggestion.is-active {
+.microblog-taginput-suggestions button.microblog-taginput-suggestion:hover,
+.microblog-taginput-suggestions button.microblog-taginput-suggestion.is-active {
 	color: var(--text-normal);
 	background: var(--background-modifier-hover);
 }
