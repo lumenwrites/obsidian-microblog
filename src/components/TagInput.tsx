@@ -3,9 +3,16 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ChangeEvent, KeyboardEvent, useMemo, useRef, useState } from "react";
 import { cn } from "../lib/utils";
 
-/** Strip a leading `#` and surrounding whitespace from a raw tag token. */
+/**
+ * Normalize a raw tag token to a safe, valid Obsidian tag: trim, drop a leading `#`,
+ * and keep only tag-legal characters (letters, digits, `_`, `-`, `/` for nesting).
+ * This also prevents YAML-special characters from corrupting the frontmatter we write.
+ */
 export function normalizeTag(raw: string): string {
-	return raw.trim().replace(/^#+/, "");
+	return raw
+		.trim()
+		.replace(/^#+/, "")
+		.replace(/[^\p{L}\p{N}_/-]/gu, "");
 }
 
 const has = (tags: string[], t: string) => tags.some((x) => x.toLowerCase() === t.toLowerCase());

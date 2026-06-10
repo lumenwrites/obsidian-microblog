@@ -35,8 +35,13 @@ export function usePosts(folderPath: string | undefined): Post[] {
 
 		const reload = async () => {
 			const mine = ++generation;
-			const next = await loadPosts(app, folderPath);
-			if (!cancelled && mine === generation) setPosts(next);
+			try {
+				const next = await loadPosts(app, folderPath);
+				if (!cancelled && mine === generation) setPosts(next);
+			} catch (e) {
+				// e.g. a cachedRead racing a delete — log rather than throw an unhandled rejection.
+				console.error("[microblog] Failed to load posts", e);
+			}
 		};
 
 		app.workspace.onLayoutReady(() => {

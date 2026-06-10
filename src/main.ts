@@ -67,10 +67,19 @@ export default class MicroblogPlugin extends Plugin {
 		return () => this.settingsListeners.delete(cb);
 	}
 
-	/** Open a timeline for `folderPath` (or the default folder) in a new tab and reveal it. */
+	/** Open a timeline for `folderPath` (or the default folder), revealing an existing one. */
 	async activateView(folderPath?: string): Promise<void> {
 		const { workspace } = this.app;
 		const path = folderPath ?? this.settings.defaultFolder;
+
+		// Reveal an existing timeline for this folder instead of opening a duplicate tab.
+		const existing = workspace
+			.getLeavesOfType(VIEW_TYPE_MICROBLOG)
+			.find((leaf) => (leaf.getViewState().state?.folderPath as string | undefined) === path);
+		if (existing) {
+			await workspace.revealLeaf(existing);
+			return;
+		}
 
 		const leaf: WorkspaceLeaf = workspace.getLeaf("tab");
 		await leaf.setViewState({

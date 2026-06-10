@@ -34,9 +34,14 @@ function parseTimestamp(basename: string): number | null {
 	return new Date(+y, +mo - 1, +d, +h, +mi, +s).getTime();
 }
 
-/** Strip the YAML frontmatter block from raw file content, using the cached position. */
+/**
+ * Strip the YAML frontmatter block from raw file content. Prefers the cached
+ * `frontmatterPosition`; falls back to a regex when the cache hasn't parsed yet
+ * (e.g. right after a post is created) so raw frontmatter never renders as the body.
+ */
 function stripFrontmatter(content: string, endOffset: number | undefined): string {
-	const body = endOffset != null ? content.slice(endOffset) : content;
+	const body =
+		endOffset != null ? content.slice(endOffset) : content.replace(/^---\r?\n[\s\S]*?\r?\n---/, "");
 	return body.replace(/^\s*\n/, "");
 }
 
