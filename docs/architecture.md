@@ -11,7 +11,7 @@ Obsidian
   └─ MicroblogPlugin (src/main.ts)            ← long-lived host: settings, view registration, ribbon, command, folder menu
        └─ TimelineView : ItemView (src/view.tsx)   ← one per tab; mounts/unmounts the React root
             └─ <PluginProvider> (src/context/PluginContext.tsx)   ← exposes plugin/app/settings/folderPath
-                 └─ <App> (src/app.tsx)            ← the SPA: search bar + timeline + composer (currently a smoke screen)
+                 └─ <App> (src/app.tsx)            ← the SPA: <Timeline /> (toolbar + feed + composer + stats)
 ```
 
 ## The Obsidian↔React boundary (the core pattern)
@@ -31,7 +31,7 @@ Obsidian
 The view is **not a singleton**. Each tab is bound to its own folder via Obsidian view state:
 
 - `setState({ folderPath }, result)` stores the path and re-renders; `getState()` returns `{ folderPath }`. Obsidian persists this with the workspace, so each tab reopens to its own folder.
-- "Open as timeline" (folder right-click) and the ribbon/command both call `plugin.activateView(folderPath?)`, which opens a new tab via `leaf.setViewState({ type, state: { folderPath } })` and reveals it. The ribbon/command pass no path, so they fall back to `settings.defaultFolder`.
+- "Open as timeline" (folder right-click) and the ribbon/command both call `plugin.activateView(folderPath?)`. It first **reveals an existing timeline for that folder** (so repeated clicks don't stack duplicate tabs); otherwise it opens a new tab via `leaf.setViewState({ type, state: { folderPath } })` and reveals it. The ribbon/command pass no path, so they fall back to `settings.defaultFolder`.
 - The folder path flows into React through the provider (`useFolderPath()`), not a global — so multiple independent timelines can be open at once.
 
 Because `setState` can fire before `onOpen()` creates the root, `renderApp()` guards on `this.root` and `onOpen()`'s own render covers the initial case.
@@ -54,7 +54,7 @@ Posts are plain notes; the plugin owns no database. The flow is one-directional 
    - archive / delete: `archivePost` and `deletePost` both `renameFile` the note into a subfolder beside it — `archived/` or `trash/` respectively (shared `moveToSubfolder` helper, folder created on demand). Since `listPostFiles` reads only *direct* children, these posts drop out of the timeline (and stats) but stay in the vault — reversible by moving them back, and each subfolder can be opened as its own timeline.
    - edit: `openPost` opens the real note in a tab — editing happens in Obsidian's own editor, not in the plugin.
 2. **`hooks/usePosts.ts`** loads the folder into React state and subscribes (inside `workspace.onLayoutReady`, removed via `offref` on unmount) to `vault` `create`/`delete`/`rename` + `metadataCache` `changed`, all filtered to the folder. Any change → reload. So hand-edits, deletes, and the plugin's own writes all converge through the same path: **write to disk → event fires → reload → re-render.** The UI never optimistically mutates local state. Reloads carry a monotonic generation token so that when rapid events fire overlapping async reloads, only the latest-started one applies — out-of-order results can't clobber newer data.
-3. **`Timeline.tsx`** turns the flat post list into display `rows` in a `useMemo`. Posts are first filtered by the done filter (All / Not done / Done). With no search it builds the **reply tree** (`reply_to` → parent via each post's `id` = filename stem), sorts roots by the current order — Newest (created), Top (score), or Resurface (`(score + 1) × days-since-modified`, so stale high-scored posts float up and just-touched ones sink) — sorts replies oldest→newest, and DFS-flattens to `{ post, depth }[]`; an active search instead flattens to the matching posts. It renders `PostCard`s bottom-anchored (auto-scroll to the composer edge), tracks the `replyTarget`, and calls `createPost(folder, body, replyTarget?.id)`.
+3. **`Timeline.tsx`** turns the flat post list into display `rows` in a `useMemo`. Posts are first filtered by the done filter (All / Not done / Done). With no search it builds the **reply tree** (`reply_to` → parent via each post's `id` = filename stem), sorts roots by the current order — Newest (created), Top (score), or Resurface (`(score + 1) × days-since-modified`, so stale high-scored posts float up and just-touched ones sink) — sorts replies oldest→newest, and DFS-flattens to `{ post, depth }[]`; an active search instead flattens to the matching posts (a `#tag` query — e.g. from clicking a tag — matches by exact tag membership; plain text matches body/tag substring). It renders `PostCard`s bottom-anchored (auto-scroll to the composer edge), tracks the `replyTarget`, and calls `createPost(folder, body, replyTarget?.id)`.
 4. **`MarkdownPreview`** renders each post body the way Obsidian renders notes (see below).
 
 ### Threads / replies
@@ -64,6 +64,10 @@ Each post's `id` is its filename stem; a reply stores the parent id in `reply_to
 ### Stats / streak
 
 `lib/stats.ts` is pure math over the already-loaded posts (no I/O), so the widget is just another transform that stays live with the feed. Days are local (midnight boundary). A single carry pass (`dayStats`) resolves every day: walking from today backward, surplus posts beyond the goal flow into a "pool" that repairs earlier unmet days, but only within the last `BACKFILL_DAYS` (14) — bounding how much one big day can fabricate. Both outputs read from that one pass, so they're consistent: the **graph** square fill is each day's backfilled `ratio` (`min(available/goal, 1)` → accent opacity; a backfilled day shows filled and its tooltip says so), and the **streak** counts consecutive `satisfied` days. Today gets a grace day (an unmet but in-progress today counts the streak from yesterday). Replies count toward both goal and total.
+
+### Tags
+
+Tags are a **structured frontmatter field** (`tags`), edited in the composer's `TagInput` (chips + autocomplete, sourced from the folder's tags via `getAllTags`) and written by `createPost` as a YAML block. `loadPost` reads them with `parseFrontMatterTags` into `post.tags`; `normalizeTag` (in `TagInput`) restricts a tag to valid tag characters, which also keeps the hand-written YAML safe. They render as chips on each post; clicking one searches `#tag` (exact membership). Separately, any inline `#hashtag` typed into a post *body* still renders as an Obsidian tag and is click-intercepted by `MarkdownPreview` to drive the same `#tag` search — but inline tags are **not** part of the structured field (so they don't become chips).
 
 ## Markdown rendering
 
@@ -146,7 +150,7 @@ src/
   lib/
     posts.ts           data layer: file ↔ Post CRUD over vault/metadataCache/fileManager
     stats.ts           pure stats math: one carry pass → backfilled 30-day graph + streak
-    utils.ts           cn() (clsx), formatPostDate(), run() (error-surfacing wrapper)
+    utils.ts           cn() (clsx), formatPostDate() / formatRelativeDate(), run() (error-surfacing wrapper)
   types/
     index.ts           Post, SortOrder, DoneFilter
 ```

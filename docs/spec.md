@@ -15,9 +15,12 @@ Each file has YAML frontmatter + markdown body:
 ```markdown
 ---
 score: 3
+tags:
+  - physics
+  - comedy
 ---
 Just realized "a watched pot never boils" is basically the
-quantum observer effect but for pasta #physics #comedy
+quantum observer effect but for pasta.
 ```
 
 Frontmatter fields:
@@ -50,8 +53,8 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
 - Filter dropdown: **All / Not done / Done** — filters by the `done` frontmatter flag.
 
 **Timeline (middle)**
-- Displays posts in chronological order, newest posts at the bottom.
-- Each post displays its content, its tags (as rounded chips on the left of the footer, click to filter), date, and score.
+- Posts render newest-first by default (the composer sits at the top — see the *Composer at top* setting). With that setting off, the composer sits at the bottom and the newest post is at the bottom, chat-style; the feed auto-scrolls to the composer's edge.
+- Each post displays its content; its tags (rounded chips on the left of the footer, click to filter); a compact relative date ("4d", "3h", full date on hover); and its score. Replies and the meta sit in a bottom-right footer (vote / edit / ⋯ menu).
 - 300 character soft limit: content longer than 300 characters is hidden under a "read more" toggle.
 - Each post has:
   - Upvote / downvote buttons (modify the post's score)
@@ -83,16 +86,20 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
 - Store the external post ID back on the local record after sharing (set `shared: ID`).
 - Share functionality may only work on desktop (Obsidian mobile lacks full Node.js). This is acceptable for MVP.
 
+## Settings
+
+`defaultFolder` (ribbon/command target), `charLimit` (read-more fold, default 300), `composerOnTop` (layout, default on), `showStats` (stats widget, default on), `dailyGoal` (target posts/day, default 3). Settings are reactive — open views update live when one changes. (Cross-posting credentials will be added with that feature.)
+
 ## Technical Notes
 
-- Plugin registers a custom Obsidian view and mounts the React app via `ReactDOM.createRoot(containerEl)`.
-- **Data layer uses Obsidian APIs directly — no custom parser/serializer needed:**
-  - Create post: `vault.create(path, frontmatter + body)`
-  - Read posts: list markdown files in the view's folder, read frontmatter from `metadataCache` (already indexed)
-  - Update frontmatter (score, shared, published): `fileManager.processFrontMatter(file, fn)` — atomic read-modify-write
-  - Update body: `vault.modify(file, newContent)`
-  - Delete post: `vault.delete(file)`
-  - Tags: indexed automatically by Obsidian's `MetadataCache`, no manual parsing needed
-- Plain CSS in a root `styles.css`, all rules scoped under `.microblog-root` to avoid collisions with Obsidian's styles; colors/spacing from Obsidian CSS variables.
-- Bundle with esbuild (standard Obsidian plugin toolchain).
-- Plugin settings: Bluesky credentials, Mastodon credentials.
+For the full build/architecture, see `architecture.md`. In brief:
+
+- Plugin registers a custom Obsidian view and mounts a React SPA via `createRoot(contentEl)`.
+- **Data layer (`lib/posts.ts`) uses Obsidian APIs directly — no custom parser/serializer:**
+  - Create post: `vault.create(path, frontmatter + body)` (frontmatter built for score / reply_to / tags).
+  - Read posts: list the folder's direct markdown children; frontmatter from `metadataCache`, tags via `parseFrontMatterTags`, body via `cachedRead` (frontmatter stripped).
+  - Update score / done: `fileManager.processFrontMatter(file, fn)` — atomic read-modify-write.
+  - Archive / delete: move the note into an `archived/` or `trash/` subfolder via `fileManager.renameFile` (reversible; excluded from the direct-children listing).
+  - Editing a post's body happens in Obsidian's own editor (the Edit action opens the note).
+- Plain CSS in a root `styles.css`, all rules scoped under `.microblog-root`; colors/spacing from Obsidian CSS variables.
+- Bundled with esbuild; React is bundled in, `obsidian`/CodeMirror external.

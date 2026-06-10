@@ -33,8 +33,10 @@ Most of this is mechanically enforced by `npm run lint` (`eslint-plugin-obsidian
 ## Styling
 
 - **Write CSS in `styles.css`, scoped under `.microblog-root`.** No inline styles for anything themable.
-- **Use Obsidian CSS variables** for color/spacing/radius (`--text-normal`, `--background-secondary`, `--interactive-accent`, `--radius-m`, `--size-4-*`, …). Don't hardcode colors — it breaks theme support.
+- **Use Obsidian CSS variables** for color/spacing/radius (`--text-normal`, `--background-secondary`, `--interactive-accent`, `--radius-m`, `--size-4-*`, `--tag-background`/`--tag-color` for tag pills, …). Don't hardcode colors — it breaks theme support.
 - Use `cn()` from `lib/utils.ts` for conditional class names.
+- **Mobile button-padding gotcha:** on mobile/tablet Obsidian injects large padding onto `button` via `.is-tablet button:not(.clickable-icon)` (specificity `0,2,1`). To make our compact button styling win, match that specificity — `.parent button.our-class { … }` — rather than a bare `.our-class`. (Used for the post ⋯ menu items, footer icon buttons, and tag-autocomplete items.) Watch the knock-on: a high-specificity base rule can then out-specify a plain `:hover` rule, so bump the hover selector to match too.
+- **Test layout on mobile too.** Obsidian's mobile chrome (taller buttons, soft-keyboard padding) differs from desktop; several fixes here are mobile-specific (`body.is-mobile …`, the composer keyboard-padding reset).
 
 ## Error handling
 
