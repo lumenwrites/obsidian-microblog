@@ -276,9 +276,11 @@
 	font-size: 0.85em;
 }
 
-/* Tighter tag padding on mobile, where the default felt too wide. */
+/* Tighter tag padding on mobile, where the default felt too wide. The chip selector
+   is qualified with `button` + the row class to out-specify Obsidian's mobile button
+   padding (0,2,1); see the chip rule below. */
 body.is-mobile .microblog-post-tag,
-body.is-mobile .microblog-taginput-chip {
+body.is-mobile .microblog-taginput-row button.microblog-taginput-chip {
 	padding-left: var(--size-2-1);
 	padding-right: var(--size-2-1);
 }
@@ -544,7 +546,11 @@ body.is-mobile .microblog-taginput-chip {
 
 /* Committed-tag chips; click to remove (the ✕ hints it). Height-driven (no vertical
    padding) so they stay within the row height; flex:none so the row scrolls. */
-.microblog-taginput-chip {
+/* Chips are <button>s, so on mobile Obsidian's `.is-tablet button:not(.clickable-icon)`
+   (specificity 0,2,1) would override a bare `.microblog-taginput-chip` background/color,
+   making chips blend into the input. Qualify with `button` + the parent class to match
+   that specificity (and win by cascade order). See best-practices "mobile button-padding". */
+.microblog-taginput-row button.microblog-taginput-chip {
 	flex: none;
 	display: inline-flex;
 	align-items: center;
@@ -560,7 +566,7 @@ body.is-mobile .microblog-taginput-chip {
 	cursor: pointer;
 }
 
-.microblog-taginput-chip:hover {
+.microblog-taginput-row button.microblog-taginput-chip:hover {
 	color: var(--text-error);
 }
 
