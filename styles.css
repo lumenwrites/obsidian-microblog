@@ -80,18 +80,25 @@
 	padding-right: calc(var(--size-4-2) * 2 + 1em);
 }
 
-.microblog-search-clear {
+/* Borderless, backgroundless icon button (it sits inside the search field). The
+   `button.` selector matches Obsidian's button specificity so its default
+   background/border don't bleed through here or on hover/active. */
+button.microblog-search-clear {
 	position: absolute;
 	right: var(--size-4-1);
 	padding: var(--size-4-1);
 	color: var(--text-muted);
 	background: transparent;
+	border: none;
 	box-shadow: none;
 	cursor: pointer;
 }
 
-.microblog-search-clear:hover {
+button.microblog-search-clear:hover,
+button.microblog-search-clear:active {
 	color: var(--text-normal);
+	background: transparent;
+	box-shadow: none;
 }
 
 .microblog-sort {
