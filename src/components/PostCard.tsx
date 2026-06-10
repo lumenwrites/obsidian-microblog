@@ -42,21 +42,18 @@ interface MenuItem {
  * All vault mutations go through `run()` so a failed write surfaces a Notice instead
  * of being silently swallowed by `void`.
  *
- * `depth` is its literal reply nesting (0 = root); `depth > 0` marks it as a reply
- * (drawing the thread border). `indent` is the visual indent level (only steps in at
- * branch points — see Timeline's walk). `isReplyTarget` highlights the reply target.
+ * `depth` is its position in a reply thread (0 = root); it indents one level per depth
+ * and draws a thread bar. `isReplyTarget` highlights the post currently being replied to.
  */
 export function PostCard({
 	post,
 	depth,
-	indent,
 	isReplyTarget,
 	onSelectTag,
 	onReply,
 }: {
 	post: Post;
 	depth: number;
-	indent: number;
 	isReplyTarget: boolean;
 	onSelectTag: (tag: string) => void;
 	onReply: () => void;
@@ -104,7 +101,7 @@ export function PostCard({
 				depth > 0 && "is-reply",
 				isReplyTarget && "is-reply-target",
 			)}
-			style={{ marginInlineStart: `${Math.min(indent, MAX_INDENT_DEPTH) * 1.25}rem` }}
+			style={{ marginInlineStart: `${Math.min(depth, MAX_INDENT_DEPTH) * 1.25}rem` }}
 		>
 			<div className={cn("microblog-post-body", foldable && !expanded && "is-collapsed")}>
 				<MarkdownPreview

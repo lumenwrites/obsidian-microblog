@@ -9,17 +9,10 @@ import { PostCard } from "./PostCard";
 import { SearchSortBar } from "./SearchSortBar";
 import { StatsWidget } from "./StatsWidget";
 
-/**
- * A post placed in display order.
- * - `depth` = literal reply nesting (0 = root). Used only to mark a post as a reply.
- * - `indent` = visual indent level. Linear chains stay flat (same indent as parent,
- *   Twitter/Bluesky self-thread style); indent only steps in when a post *branches*
- *   into 2+ replies, so the tree structure shows only where it actually forks.
- */
+/** A post placed in display order, with its reply-nesting depth (0 = root). */
 interface Row {
 	post: Post;
 	depth: number;
-	indent: number;
 }
 
 /**
@@ -91,7 +84,7 @@ export function Timeline() {
 			return pool
 				.filter(matches)
 				.sort(compareRoots)
-				.map((post) => ({ post, depth: 0, indent: 0 }));
+				.map((post) => ({ post, depth: 0 }));
 		}
 
 		// Threaded: parent → children, plus the roots (top-level or orphaned replies).
@@ -125,18 +118,14 @@ export function Timeline() {
 
 		roots.sort(compareRoots);
 
-		// DFS into a flat list in display order. Indent steps in when (a) leaving a root
-		// into its replies — so first-level replies sit one notch in from the root — or
-		// (b) at a branch (2+ replies). A deeper *single* reply continues at the parent's
-		// indent, so linear self-chains render flat instead of marching rightward.
+		// DFS into a flat list in display order, carrying depth for indentation (one
+		// level per reply depth, so reply-to-a-reply nests visibly under its parent).
 		const out: Row[] = [];
-		const walk = (post: Post, depth: number, indent: number) => {
-			out.push({ post, depth, indent });
-			const children = childrenOf.get(post.id) ?? [];
-			const childIndent = depth === 0 || children.length > 1 ? indent + 1 : indent;
-			for (const child of children) walk(child, depth + 1, childIndent);
+		const walk = (post: Post, depth: number) => {
+			out.push({ post, depth });
+			for (const child of childrenOf.get(post.id) ?? []) walk(child, depth + 1);
 		};
-		roots.forEach((root) => walk(root, 0, 0));
+		roots.forEach((root) => walk(root, 0));
 		return out;
 	}, [posts, query, sort, dir, filter]);
 
@@ -203,12 +192,11 @@ export function Timeline() {
 									: "No posts yet — write your first one."}
 				</p>
 			) : (
-				rows.map(({ post, depth, indent }) => (
+				rows.map(({ post, depth }) => (
 					<PostCard
 						key={post.path}
 						post={post}
 						depth={depth}
-						indent={indent}
 						isReplyTarget={replyTarget?.id === post.id}
 						onSelectTag={selectTag}
 						onReply={() => setReplyTarget(post)}
