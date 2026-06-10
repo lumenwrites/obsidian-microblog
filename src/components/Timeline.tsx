@@ -174,7 +174,10 @@ export function Timeline() {
 			allTags={allTags}
 		/>
 	);
-	const stats = settings.showStats ? <StatsWidget posts={posts} /> : null;
+	// Stats reflect the currently visible posts: filtering by done / searching by tag
+	// or text narrows the contribution graph, streak, and total to that subset.
+	const visiblePosts = useMemo(() => rows.map((r) => r.post), [rows]);
+	const stats = settings.showStats ? <StatsWidget posts={visiblePosts} /> : null;
 	const feed = (
 		<div className="microblog-feed" ref={feedRef}>
 			{rows.length === 0 ? (

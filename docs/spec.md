@@ -70,6 +70,7 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
 - A 30-day contribution graph — one rounded square per day, fill scaling with that day's progress toward the daily goal (pale at the first post, fully saturated at the goal). Today's square is outlined. Fill includes backfill (the same surplus-flows-backward rule as the streak), so a repaired day shows as filled; its tooltip notes "(backfilled)".
 - A **streak** (🔥) — consecutive days the goal was met, ending today. Backfillable: surplus posts beyond the goal flow backward to repair skipped days within the last 14 days (so an off day or two is forgiven). An in-progress today gets a grace day.
 - A **total** (▪) — all-time post count in the folder.
+- The stats reflect the **currently visible posts**: applying a done filter or a search (tag/text) narrows the graph, streak, and total to that subset, so e.g. filtering by "done" shows how many done posts there are. With no filter/search active they cover the whole folder.
 - Per folder; visible by default, hideable via **Show stats**. Daily goal is configurable (default 3). Replies count toward goal and total.
 
 **Editor (bottom)**
