@@ -125,14 +125,15 @@ export function Timeline() {
 
 		roots.sort(compareRoots);
 
-		// DFS into a flat list in display order. `indent` only advances at a branch
-		// (a post with 2+ replies); a single reply continues at the parent's indent,
-		// so linear self-chains render flat instead of marching rightward.
+		// DFS into a flat list in display order. Indent steps in when (a) leaving a root
+		// into its replies — so first-level replies sit one notch in from the root — or
+		// (b) at a branch (2+ replies). A deeper *single* reply continues at the parent's
+		// indent, so linear self-chains render flat instead of marching rightward.
 		const out: Row[] = [];
 		const walk = (post: Post, depth: number, indent: number) => {
 			out.push({ post, depth, indent });
 			const children = childrenOf.get(post.id) ?? [];
-			const childIndent = children.length > 1 ? indent + 1 : indent;
+			const childIndent = depth === 0 || children.length > 1 ? indent + 1 : indent;
 			for (const child of children) walk(child, depth + 1, childIndent);
 		};
 		roots.forEach((root) => walk(root, 0, 0));
