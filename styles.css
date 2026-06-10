@@ -220,20 +220,31 @@
 	color: var(--color-green, #4caf50);
 }
 
-/* Tags sit on the left of the footer; margin-right:auto pushes meta/actions right. */
+/* Tags fill the left of the footer (flex:1 pushes meta/actions right) and scroll
+   horizontally — with no visible scrollbar — instead of wrapping to a new line. */
 .microblog-post-tags {
+	flex: 1;
+	min-width: 0;
 	display: flex;
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
 	gap: var(--size-2-2);
-	margin-right: auto;
+	overflow-x: auto;
+	scrollbar-width: none;
 }
 
-/* A tag chip — rounded rectangle, same height as the footer icon buttons (1.9em). */
+.microblog-post-tags::-webkit-scrollbar {
+	display: none;
+}
+
+/* A tag badge — rounded rectangle, same height as the footer icon buttons (1.9em).
+   flex:none so it keeps its size and the row scrolls rather than squashing chips. */
 .microblog-post-tag {
+	flex: none;
 	display: inline-flex;
 	align-items: center;
+	gap: var(--size-2-1);
 	height: 1.9em;
-	padding: 0 var(--size-4-2);
+	padding: 0 var(--size-4-1);
 	border-radius: var(--radius-s);
 	font-size: var(--font-ui-smaller);
 	color: var(--text-muted);
@@ -245,6 +256,19 @@
 .microblog-post-tag:hover {
 	color: var(--text-on-accent);
 	background: var(--interactive-accent);
+}
+
+/* The leading "#" on a tag chip/badge — slightly dimmed so the label reads first. */
+.microblog-tag-hash {
+	opacity: 0.6;
+	font-size: 0.85em;
+}
+
+/* Tighter tag padding on mobile, where the default felt too wide. */
+body.is-mobile .microblog-post-tag,
+body.is-mobile .microblog-taginput-chip {
+	padding-left: var(--size-2-1);
+	padding-right: var(--size-2-1);
 }
 
 .microblog-post-actions {
@@ -463,7 +487,6 @@
 	flex: 1;
 	min-width: 0;
 	display: flex;
-	flex-wrap: wrap;
 	align-items: center;
 	gap: var(--size-2-2);
 	padding: var(--size-4-1) var(--size-4-2);
@@ -484,9 +507,26 @@
 	color: var(--text-muted);
 }
 
+/* The chips + field row: scrolls horizontally (no visible scrollbar) instead of
+   wrapping. The suggestions panel is a sibling outside this row so it isn't clipped. */
+.microblog-taginput-row {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-2);
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.microblog-taginput-row::-webkit-scrollbar {
+	display: none;
+}
+
 /* Committed-tag chips; click to remove (the ✕ hints it). Height-driven (no vertical
-   padding) so they stay within the row height. */
+   padding) so they stay within the row height; flex:none so the row scrolls. */
 .microblog-taginput-chip {
+	flex: none;
 	display: inline-flex;
 	align-items: center;
 	gap: var(--size-2-1);

@@ -1,4 +1,4 @@
-import { faTag, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faHashtag, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { ChangeEvent, KeyboardEvent, useMemo, useRef, useState } from "react";
 import { cn } from "../lib/utils";
@@ -92,27 +92,32 @@ export function TagInput({
 
 	return (
 		<div className="microblog-taginput" onClick={() => inputRef.current?.focus()}>
-			<FontAwesomeIcon icon={faTag} className="microblog-taginput-icon" />
-			{tags.map((tag) => (
-				<button
-					key={tag}
-					type="button"
-					className="microblog-taginput-chip"
-					title="Remove tag"
-					onClick={() => onTagsChange(tags.filter((x) => x !== tag))}
-				>
-					<span>{tag}</span>
-					<FontAwesomeIcon icon={faXmark} />
-				</button>
-			))}
-			<input
-				ref={inputRef}
-				className="microblog-taginput-field"
-				placeholder={tags.length ? "" : "add tags…"}
-				value={input}
-				onChange={onChange}
-				onKeyDown={onKeyDown}
-			/>
+			<FontAwesomeIcon icon={faHashtag} className="microblog-taginput-icon" />
+			{/* The chips + field scroll horizontally as a unit; the suggestions panel
+			    stays outside this row (sibling) so it isn't clipped by the overflow. */}
+			<div className="microblog-taginput-row">
+				{tags.map((tag) => (
+					<button
+						key={tag}
+						type="button"
+						className="microblog-taginput-chip"
+						title="Remove tag"
+						onClick={() => onTagsChange(tags.filter((x) => x !== tag))}
+					>
+						<FontAwesomeIcon icon={faHashtag} className="microblog-tag-hash" />
+						<span>{tag}</span>
+						<FontAwesomeIcon icon={faXmark} />
+					</button>
+				))}
+				<input
+					ref={inputRef}
+					className="microblog-taginput-field"
+					placeholder={tags.length ? "" : "add tags…"}
+					value={input}
+					onChange={onChange}
+					onKeyDown={onKeyDown}
+				/>
+			</div>
 			{matches.length > 0 && (
 				<div className="microblog-taginput-suggestions" role="listbox">
 					{matches.map((m, i) => (

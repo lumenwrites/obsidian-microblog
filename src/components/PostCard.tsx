@@ -5,6 +5,7 @@ import {
 	faBoxArchive,
 	faCheck,
 	faEllipsis,
+	faHashtag,
 	faPenToSquare,
 	faReply,
 	faShareNodes,
@@ -126,6 +127,7 @@ export function PostCard({
 								title={`Filter by ${tag}`}
 								onClick={() => onSelectTag(tag)}
 							>
+								<FontAwesomeIcon icon={faHashtag} className="microblog-tag-hash" />
 								{tag}
 							</button>
 						))}
