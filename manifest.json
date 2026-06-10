@@ -1,7 +1,7 @@
 {
 	"id": "microblog",
 	"name": "Microblog",
-	"version": "0.1.26",
+	"version": "0.1.27",
 	"minAppVersion": "1.7.2",
 	"description": "A Twitter-like microblog timeline over a folder of markdown notes — for practicing comedy writing.",
 	"author": "lumen",

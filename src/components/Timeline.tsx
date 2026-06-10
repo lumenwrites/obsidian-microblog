@@ -50,10 +50,17 @@ export function Timeline() {
 		const resurfacePriority = (p: Post) =>
 			(p.score + 1) * Math.max(0, (now - p.modified) / 86_400_000);
 
+		// A root's "activity" time = the newest post time anywhere in its thread, so a
+		// fresh reply bumps the whole thread to the top under Newest sort (old-school
+		// forum bumping). Filled by the threaded branch below; empty for flat search
+		// results, where it falls back to each post's own creation time.
+		const latestActivity = new Map<string, number>();
+		const activityOf = (p: Post) => latestActivity.get(p.id) ?? p.created;
+
 		const compareRoots = (a: Post, b: Post) => {
 			if (sort === "resurface") return dir * (resurfacePriority(a) - resurfacePriority(b));
 			if (sort === "score") return dir * (a.score - b.score || a.created - b.created);
-			return dir * (a.created - b.created);
+			return dir * (activityOf(a) - activityOf(b));
 		};
 
 		// Filter by done state first.
@@ -96,6 +103,19 @@ export function Timeline() {
 		for (const siblings of childrenOf.values()) {
 			siblings.sort((a, b) => a.created - b.created); // replies read oldest→newest
 		}
+
+		// Compute each post's latest-activity time (max created across its subtree) so
+		// Newest sort can bump threads with recent replies. Memoized via the shared map.
+		const computeActivity = (post: Post): number => {
+			let latest = post.created;
+			for (const child of childrenOf.get(post.id) ?? []) {
+				latest = Math.max(latest, computeActivity(child));
+			}
+			latestActivity.set(post.id, latest);
+			return latest;
+		};
+		roots.forEach(computeActivity);
+
 		roots.sort(compareRoots);
 
 		// DFS into a flat list in display order, carrying depth for indentation.
