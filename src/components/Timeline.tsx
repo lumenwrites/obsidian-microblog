@@ -9,10 +9,17 @@ import { PostCard } from "./PostCard";
 import { SearchSortBar } from "./SearchSortBar";
 import { StatsWidget } from "./StatsWidget";
 
-/** A post placed in display order, with its nesting depth in the thread tree. */
+/**
+ * A post placed in display order.
+ * - `depth` = literal reply nesting (0 = root). Used only to mark a post as a reply.
+ * - `indent` = visual indent level. Linear chains stay flat (same indent as parent,
+ *   Twitter/Bluesky self-thread style); indent only steps in when a post *branches*
+ *   into 2+ replies, so the tree structure shows only where it actually forks.
+ */
 interface Row {
 	post: Post;
 	depth: number;
+	indent: number;
 }
 
 /**
@@ -84,7 +91,7 @@ export function Timeline() {
 			return pool
 				.filter(matches)
 				.sort(compareRoots)
-				.map((post) => ({ post, depth: 0 }));
+				.map((post) => ({ post, depth: 0, indent: 0 }));
 		}
 
 		// Threaded: parent → children, plus the roots (top-level or orphaned replies).
@@ -118,13 +125,17 @@ export function Timeline() {
 
 		roots.sort(compareRoots);
 
-		// DFS into a flat list in display order, carrying depth for indentation.
+		// DFS into a flat list in display order. `indent` only advances at a branch
+		// (a post with 2+ replies); a single reply continues at the parent's indent,
+		// so linear self-chains render flat instead of marching rightward.
 		const out: Row[] = [];
-		const walk = (post: Post, depth: number) => {
-			out.push({ post, depth });
-			for (const child of childrenOf.get(post.id) ?? []) walk(child, depth + 1);
+		const walk = (post: Post, depth: number, indent: number) => {
+			out.push({ post, depth, indent });
+			const children = childrenOf.get(post.id) ?? [];
+			const childIndent = children.length > 1 ? indent + 1 : indent;
+			for (const child of children) walk(child, depth + 1, childIndent);
 		};
-		roots.forEach((root) => walk(root, 0));
+		roots.forEach((root) => walk(root, 0, 0));
 		return out;
 	}, [posts, query, sort, dir, filter]);
 
@@ -191,11 +202,12 @@ export function Timeline() {
 									: "No posts yet — write your first one."}
 				</p>
 			) : (
-				rows.map(({ post, depth }) => (
+				rows.map(({ post, depth, indent }) => (
 					<PostCard
 						key={post.path}
 						post={post}
 						depth={depth}
+						indent={indent}
 						isReplyTarget={replyTarget?.id === post.id}
 						onSelectTag={selectTag}
 						onReply={() => setReplyTarget(post)}

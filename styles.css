@@ -185,9 +185,13 @@
 	border-radius: var(--radius-m);
 }
 
-/* Replies in a thread: indented (inline style) with an accent thread-line. */
+/* Replies in a thread: a 3px brighter-gray left bar marks them as part of a thread.
+   Square the left corners so the bar reads as a continuous thread line; indentation
+   itself (inline style) only steps in at branch points (see Timeline's walk). */
 .microblog-post.is-reply {
-	border-left: 2px solid var(--interactive-accent);
+	border-left: 3px solid var(--background-modifier-border-hover);
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
 }
 
 /* The post currently being replied to. */
