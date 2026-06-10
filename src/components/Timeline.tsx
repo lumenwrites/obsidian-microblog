@@ -62,11 +62,18 @@ export function Timeline() {
 				? posts
 				: posts.filter((p) => (filter === "done" ? p.done != null : p.done == null));
 
-		// Search: a flat list of matching posts (replies included).
+		// Search: a flat list of matching posts (replies included). A "#tag" query
+		// (e.g. from clicking a tag) filters by exact tag membership; plain text matches
+		// the body or any tag as a substring.
 		if (query) {
-			const matches = (p: Post) =>
-				p.body.toLowerCase().includes(query) ||
-				p.tags.some((t) => t.toLowerCase().includes(query));
+			const matches = query.startsWith("#")
+				? (p: Post) => {
+						const tag = query.slice(1);
+						return p.tags.some((t) => t.toLowerCase() === tag);
+					}
+				: (p: Post) =>
+						p.body.toLowerCase().includes(query) ||
+						p.tags.some((t) => t.toLowerCase().includes(query));
 			return pool
 				.filter(matches)
 				.sort(compareRoots)
@@ -125,6 +132,9 @@ export function Timeline() {
 		setReplyTarget(null);
 	};
 
+	// Clicking a tag (chip or inline) searches "#tag", which filters by tag membership.
+	const selectTag = (tag: string) => setSearch(`#${tag}`);
+
 	const bar = (
 		<SearchSortBar
 			search={search}
@@ -164,7 +174,7 @@ export function Timeline() {
 						post={post}
 						depth={depth}
 						isReplyTarget={replyTarget?.id === post.id}
-						onSelectTag={setSearch}
+						onSelectTag={selectTag}
 						onReply={() => setReplyTarget(post)}
 					/>
 				))

@@ -553,8 +553,9 @@ body.is-mobile .microblog-taginput-chip {
 	padding: 0 var(--size-4-1);
 	border-radius: var(--radius-s);
 	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
-	background: var(--background-modifier-hover);
+	/* Obsidian's tag pill colors so chips stay distinct from the input's field bg. */
+	color: var(--tag-color);
+	background: var(--tag-background);
 	box-shadow: none;
 	cursor: pointer;
 }

@@ -44,8 +44,8 @@ Single-page React app, rendered in an Obsidian view pane. Stack: React + plain C
 ### Layout (top to bottom)
 
 **Search & Sort Bar (top)**
-- Search input. Typing text filters posts to those containing the text. X button clears the search.
-- Clicking a tag chip on any post populates the search bar with that tag and filters automatically.
+- Search input. Typing text filters posts whose body or tags contain it. A `#tag` query filters by exact tag membership instead. X button clears the search.
+- Clicking a tag chip (or an inline tag in a post) puts `#tag` in the search bar, filtering to posts that have that tag.
 - Sorting dropdown: Newest (chronological), Top (by score), or **Resurface** — a review-priority order that floats up stale, high-scored posts (so good old material periodically resurfaces); interacting with a post (edit/upvote/done) bumps its modified time and sends it back down to climb again.
 - Filter dropdown: **All / Not done / Done** — filters by the `done` frontmatter flag.
 
