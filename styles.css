@@ -269,7 +269,7 @@
    Kept identical to the tag-input chip hover so the two look the same. */
 .microblog-post-tag:hover {
 	color: var(--text-normal);
-	background: var(--background-modifier-border);
+	background: #3f3f3f;
 }
 
 /* The leading "#" on a tag chip/badge — slightly dimmed so the label reads first. */
@@ -574,6 +574,7 @@ body.is-mobile .microblog-taginput-row button.microblog-taginput-chip {
 .microblog-taginput-row button.microblog-taginput-chip:hover {
 	color: var(--text-normal);
 	background: var(--background-modifier-border);
+	background: #3f3f3f;
 }
 
 /* The in-progress token field — borderless, fixed-height (drives the row). */
